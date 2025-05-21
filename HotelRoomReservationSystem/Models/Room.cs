@@ -9,7 +9,8 @@ namespace HotelRoomReservationSystem.Models
         ocupated = 2,
         canceledByUser = 3,
         canceledByHotel = 4,
-        expired = 5
+        expired = 5,
+        completed = 6
     }
 
     public class Room

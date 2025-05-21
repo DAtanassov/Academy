@@ -5,9 +5,9 @@ namespace HotelRoomReservationSystem
 {
     internal class Program
     {
-        private static User? userLogged;
-        private static Hotel? selectedHotel;
-        private static Room? selectedRoom;
+        private static User? user;
+        private static Hotel? hotel;
+        private static Room? room;
         
         private static DataHelper dataHelper = new DataHelper();
         private static UserHelper userHelper = new UserHelper();
@@ -48,15 +48,15 @@ namespace HotelRoomReservationSystem
             Console.Clear();
 
             // Print first row (Hotel, User)
-            if (selectedHotel == null)
+            if (hotel == null)
                 Console.Write($"\t\t");
             else
-                Console.Write($"Hotel: \"{selectedHotel.Name}\"");
+                Console.Write($"Hotel: \"{hotel.Name}\"");
 
-            if (userLogged == null)
+            if (user == null)
                 Console.Write($"\t\t0. Login");
             else
-                Console.Write($"\t\tUser: \"{userLogged.Name}\" (0. Logout)");
+                Console.Write($"\t\tUser: \"{user.Name}\" (0. Logout)");
 
             Console.WriteLine("\n\n");
         }
@@ -73,14 +73,14 @@ namespace HotelRoomReservationSystem
             {
                 List<Hotel> hotels = hotelHelper.GetHotels();
 
-                bool isAdmin = (userLogged != null && userLogged.IsAdmin);
+                bool isAdmin = (user != null && user.IsAdmin);
                 
-                if (userLogged != null)
+                if (user != null)
                     menu.Add(menu.Count, ["User profile", "2"]);
 
                 if (isAdmin)
                 {
-                    if (selectedHotel == null)
+                    if (hotel == null)
                         menu.Add(menu.Count, ["Add hotel", "20"]);
                 }
 
@@ -89,7 +89,7 @@ namespace HotelRoomReservationSystem
                     menu.Add(menu.Count, ["Search menu", "7"]);
 
                     menu.Add(menu.Count, ["Show hotels", "21"]);
-                    if (selectedHotel == null)
+                    if (hotel == null)
                         menu.Add(menu.Count, ["Select hotel", "22"]);
                     else
                     {
@@ -146,21 +146,21 @@ namespace HotelRoomReservationSystem
                 if (option == "1")
                 {
                     Console.Clear();
-                    userLogged = userHelper.AddUser(true);
-                    isAdminRegistered = (userLogged != null);
+                    user = userHelper.AddUser(true);
+                    isAdminRegistered = (user != null);
                     continue;
                 }
 
                 switch (option)
                 {
                     case "0": // login/Logout
-                        if (userLogged == null)
-                            userLogged = userHelper.UserLogin();
+                        if (user == null)
+                            user = userHelper.UserLogin();
                         else
-                            userLogged = null;
+                            user = null;
                         break;
                     case "2":
-                        userHelper.UserProfileMenu(userLogged, null);
+                        userHelper.UserProfileMenu(user, null);
                         break;
                     case "7": // Search for room
                         RoomSearch();
@@ -171,29 +171,29 @@ namespace HotelRoomReservationSystem
                         {
                             Console.Write("\tSelect new hotel? (\"Y/n\"): ");
                             if ((Console.ReadLine() ?? "n").ToLower() == "y")
-                                selectedHotel = hotel;
+                                Program.hotel = hotel;
                         }
                         break;
                     case "21": // show hotels
                         hotelHelper.ShowAll();
                         break;
                     case "22": // select hotel
-                        selectedHotel = hotelHelper.SelectHotel(selectedHotel);
+                        Program.hotel = hotelHelper.SelectHotel(Program.hotel);
                         break;
                     case "23": // edit hotel
-                        if (selectedHotel != null)
-                            hotelHelper.EditHotel(selectedHotel);
+                        if (Program.hotel != null)
+                            hotelHelper.EditHotel(Program.hotel);
                         break;
                     case "24": // deselect hotel
-                        selectedHotel = null;
+                        Program.hotel = null;
                         break;
                     case "320": // show rooms in selected hotel
-                        if (selectedHotel != null)
-                            roomHelper.ShowRooms(selectedHotel);
+                        if (Program.hotel != null)
+                            roomHelper.ShowRooms(Program.hotel);
                         break;
                     case "321": // Show room types
-                        if (selectedHotel != null)
-                            roomHelper.ShowRoomTypes(selectedHotel);
+                        if (Program.hotel != null)
+                            roomHelper.ShowRoomTypes(Program.hotel);
                         break;
                     case "1000":
                         running = false;
@@ -218,7 +218,7 @@ namespace HotelRoomReservationSystem
 
             menu.Add(menu.Count, ["Search room by date", "30"]);
 
-            if (selectedHotel == null)
+            if (hotel == null)
             {
                 List<Hotel> hotels = hotelHelper.GetHotels();
                 if (hotels.Count > 0)
@@ -227,7 +227,7 @@ namespace HotelRoomReservationSystem
             else
                 menu.Add(menu.Count, ["Deselect hotel", "24"]);
 
-            if (selectedRoom != null)
+            if (room != null)
                 menu.Add(menu.Count, ["Deselect room", "900"]);
 
             menu.Add(menu.Count, ["< Back", "1000"]);
@@ -269,22 +269,22 @@ namespace HotelRoomReservationSystem
                 switch (option)
                 {
                     case "0": // login/logout
-                        if (userLogged == null)
-                            userLogged = userHelper.UserLogin();
+                        if (user == null)
+                            user = userHelper.UserLogin();
                         else
-                            userLogged = null;
+                            user = null;
                         break;
                     case "22": // select hotel
-                        selectedHotel = hotelHelper.SelectHotel(selectedHotel);
+                        hotel = hotelHelper.SelectHotel(hotel);
                         break;
                     case "24": // deselect hotel
-                        selectedHotel = null;
+                        hotel = null;
                         break;
                     case "30": // Search for available rooms
-                        reservationHelper.SearchForAvailableRooms(selectedHotel, userLogged);
+                        reservationHelper.SearchForAvailableRooms(hotel, user);
                         break;
                     case "900": // deselect room
-                        selectedRoom = null;
+                        room = null;
                         break;
                     case "1000":
                         running = false;

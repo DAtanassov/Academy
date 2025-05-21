@@ -1,4 +1,6 @@
-﻿namespace HotelRoomReservationSystem.Models
+﻿using HotelRoomReservationSystem.Helpers;
+
+namespace HotelRoomReservationSystem.Models
 {
     public class Reservation
     {
@@ -39,5 +41,17 @@
             this.CreationDate = DateTime.Now;
         }
 
+        public string GetShortInfo()
+        {
+            Hotel? hotel = new HotelHelper().GetHotelById(HotelId);
+            Room? room = new RoomHelper().GetRoomById(RoomId);
+
+            return $"Reservation ID: {Id}, " +
+                   $"Hotel ID: {HotelId}, " +
+                   $"Room ID: {RoomId}, " +
+                   $"Check-in: {CheckInDate.ToShortDateString()}, " +
+                   $"Check-out: {CheckOutDate.ToShortDateString()}, " +
+                   $"Status: {Enum.GetName(Status.GetType(), Status)}";
+        }
     }
 }

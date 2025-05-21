@@ -158,7 +158,7 @@ namespace HotelRoomReservationSystem.Helpers
 
             // Edit name
             PrintUserManagmentHeader(admin, user, null);
-            Console.WriteLine("\tEdit name? (\"Y/n\"): ");
+            Console.Write("\tEdit name? (\"Y/n\"): ");
             if ((Console.ReadLine() ?? "n").ToLower() == "y")
             {
                 while (string.IsNullOrEmpty(name))
@@ -184,7 +184,7 @@ namespace HotelRoomReservationSystem.Helpers
 
             // Edit e-mail address
             PrintUserManagmentHeader(admin, user, null);
-            Console.WriteLine("\tEdit e-mail? (\"Y/n\"): ");
+            Console.Write("\tEdit e-mail? (\"Y/n\"): ");
             if ((Console.ReadLine() ?? "n").ToLower() == "y")
             {
                 while (string.IsNullOrEmpty(email))
@@ -222,7 +222,7 @@ namespace HotelRoomReservationSystem.Helpers
                 if (!string.IsNullOrEmpty(email))
                 {
                     PrintUserManagmentHeader(admin, user, null);
-                    Console.WriteLine("\tUse e-mail as username? (\"Y/n\"): ");
+                    Console.Write("\tUse e-mail as username? (\"Y/n\"): ");
                     if ((Console.ReadLine() ?? "n").ToLower() == "y")
                         username = email;
                 }
@@ -232,7 +232,7 @@ namespace HotelRoomReservationSystem.Helpers
 
             // Edit username
             PrintUserManagmentHeader(admin, user, null);
-            Console.WriteLine("\tEdit username? (\"Y/n\"): ");
+            Console.Write("\tEdit username? (\"Y/n\"): ");
             if ((Console.ReadLine() ?? "n").ToLower() == "y")
             {
 
@@ -273,7 +273,7 @@ namespace HotelRoomReservationSystem.Helpers
 
             // Edit password
             PrintUserManagmentHeader(admin, user, null);
-            Console.WriteLine("\tEdit password? (\"Y/n\"): ");
+            Console.Write("\tEdit password? (\"Y/n\"): ");
             if ((Console.ReadLine() ?? "n").ToLower() == "y")
             {
                 while (string.IsNullOrEmpty(password))
@@ -312,7 +312,7 @@ namespace HotelRoomReservationSystem.Helpers
 
             // Edit phone
             PrintUserManagmentHeader(admin, user, null);
-            Console.WriteLine("\tEdit phone number? (\"Y/n\"): ");
+            Console.Write("\tEdit phone number? (\"Y/n\"): ");
             if ((Console.ReadLine() ?? "n").ToLower() == "y")
             {
                 while (string.IsNullOrEmpty(phone))
@@ -335,7 +335,7 @@ namespace HotelRoomReservationSystem.Helpers
 
             // Edit address
             PrintUserManagmentHeader(admin, user, null);
-            Console.WriteLine("\tEdit address? (\"Y/n\"): ");
+            Console.Write("\tEdit address? (\"Y/n\"): ");
             if ((Console.ReadLine() ?? "n").ToLower() == "y")
             {
                 while (string.IsNullOrEmpty(address))
@@ -347,7 +347,7 @@ namespace HotelRoomReservationSystem.Helpers
                     if (string.IsNullOrEmpty(address))
                     {
                         PrintUserManagmentHeader(admin, user, null);
-                        Console.WriteLine("\tAddress is empty! Continue? (\"Y/n\"): ");
+                        Console.Write("\tAddress is empty! Continue? (\"Y/n\"): ");
                         if ((Console.ReadLine() ?? "n").ToLower() == "y")
                             break;
                     }
@@ -359,7 +359,7 @@ namespace HotelRoomReservationSystem.Helpers
             if (admin.IsAdmin && admin != user)
             {
                 PrintUserManagmentHeader(admin, user, null);
-                Console.WriteLine($"\t{((user.Deactivated) ? "Activate" : "Deactivate")} user? (\"Y/n\"): ");
+                Console.Write($"\t{((user.Deactivated) ? "Activate" : "Deactivate")} user? (\"Y/n\"): ");
                 if ((Console.ReadLine() ?? "n").ToLower() == "y")
                     deactivated = !user.Deactivated;
             }
@@ -418,7 +418,7 @@ namespace HotelRoomReservationSystem.Helpers
         {
             Console.Clear();
 
-            // Print first row (Hotel, User)
+            // Print first row (reservation, User)
             if (reservation == null)
                 Console.Write($"\t\t");
             else

@@ -1,4 +1,5 @@
 ﻿using System.Text.Json;
+using System.Xml.Linq;
 using HotelRoomReservationSystem.Models;
 
 namespace HotelRoomReservationSystem.Helpers
@@ -60,14 +61,15 @@ namespace HotelRoomReservationSystem.Helpers
             if (reservations.Count == 0) return;
             
             DateTime toDate = DateTime.Today.Date.AddHours(12); // cancel reservation if not changet to "ocupated" befor 12h
-            List<Reservation> booked = (List<Reservation>)reservations.Where(r => (r.Status == RoomStatus.booked && r.CheckInDate < toDate)).ToList();
-            if (booked.Count == 0) return;
-
-            foreach (Reservation reservation in booked)
+            List<Reservation> booked = reservations.Where(r => (r.Status == RoomStatus.booked && r.CheckInDate < toDate)).ToList();
+            if (booked.Count > 0)
             {
-                reservation.Status = RoomStatus.expired;
-                int rIndex = reservations.FindIndex(r => r.Id == reservation.Id);
-                reservations[rIndex] = reservation;
+                foreach (Reservation reservation in booked)
+                {
+                    reservation.Status = RoomStatus.expired;
+                    int rIndex = reservations.FindIndex(r => r.Id == reservation.Id);
+                    reservations[rIndex] = reservation;
+                }
             }
 
             dataHelper.WriteUpdateReservations(reservations);
@@ -75,7 +77,7 @@ namespace HotelRoomReservationSystem.Helpers
         }
 
         private static void PrintSearchHeader(Hotel? hotel, User? user,
-            DateTime? checkInDate = null, DateTime? checkOutDate = null, string? location = null)
+            string? checkInDate = null, string? checkOutDate = null, string? location = null)
         {
             Console.Clear();
 
@@ -123,25 +125,25 @@ namespace HotelRoomReservationSystem.Helpers
                 Console.Write("Enter check in date: ");
             }
 
-            PrintSearchHeader(hotel, user, checkInDate);
+            PrintSearchHeader(hotel, user, checkInDate.ToShortDateString());
             Console.Write("Enter check out date: ");
             while (!DateTime.TryParse(Console.ReadLine(), out checkOutDate)
                 || checkOutDate <= DateTime.Today
                 || checkOutDate < checkInDate)
             {
-                PrintSearchHeader(hotel, user, checkInDate.Date);
+                PrintSearchHeader(hotel, user, checkInDate.ToShortDateString());
                 Console.WriteLine("\tCheck-out date must be greater than current and check-in date!");
                 Console.WriteLine("\n\tPress \"Esc\" for cancel or any other key to continue...");
                 ConsoleKeyInfo userInput = Console.ReadKey();
                 if (userInput.Key == ConsoleKey.Escape)
                     return;
-                PrintSearchHeader(hotel, user, checkInDate);
+                PrintSearchHeader(hotel, user, checkInDate.ToShortDateString());
                 Console.Write("Enter check out date: ");
             }
 
             if (hotel == null)
             {
-                PrintSearchHeader(hotel, user, checkInDate, checkOutDate);
+                PrintSearchHeader(hotel, user, checkInDate.ToShortDateString(), checkOutDate.ToShortDateString());
                 Console.Write("Enter location: ");
                 location = Console.ReadLine() ?? string.Empty;
             }
@@ -177,7 +179,7 @@ namespace HotelRoomReservationSystem.Helpers
 
             Dictionary<int, Room> menu = new Dictionary<int, Room>();
 
-            PrintSearchHeader(hotel, user, checkInDate, checkOutDate, location);
+            PrintSearchHeader(hotel, user, checkInDate.ToShortDateString(), checkOutDate.ToShortDateString(), location);
             if (rooms.Count > 0)
                 Console.WriteLine("\n\tAvailable rooms:\n");
             int counter = 0;
@@ -248,9 +250,7 @@ namespace HotelRoomReservationSystem.Helpers
             if (!int.TryParse((Console.ReadLine() ?? "-1"), out choice)
                 || !(menu.ContainsKey(choice) || choice == counter))
             {
-                PrintSearchHeader(hotel, user, checkInDate, checkOutDate, location);
-
-                // TODO - Change to while and print rooms and hotels
+                PrintSearchHeader(hotel, user, checkInDate.ToShortDateString(), checkOutDate.ToShortDateString(), location);
                 Console.WriteLine("\nInvalid option. Press any key to try again.");
                 Console.ReadKey();
                 return;
@@ -261,7 +261,7 @@ namespace HotelRoomReservationSystem.Helpers
 
             while(user == null)
             {
-                PrintSearchHeader(hotel, user, checkInDate, checkOutDate, location);
+                PrintSearchHeader(hotel, user, checkInDate.ToShortDateString(), checkOutDate.ToShortDateString(), location);
 
                 UserHelper userHelper = new UserHelper();
                 Console.Clear();
@@ -273,7 +273,7 @@ namespace HotelRoomReservationSystem.Helpers
                 user = userHelper.GetUser(username, password);
                 if (user == null)
                 {
-                    PrintSearchHeader(hotel, user, checkInDate, checkOutDate, location);
+                    PrintSearchHeader(hotel, user, checkInDate.ToShortDateString(), checkOutDate.ToShortDateString(), location);
                     Console.WriteLine("\tUser not logged in!");
                     Console.WriteLine("\n\tPress \"Esc\" for cancel or any other key to try again.");
                     ConsoleKeyInfo userInput = Console.ReadKey(true);
@@ -291,7 +291,7 @@ namespace HotelRoomReservationSystem.Helpers
 
         public void BookTheRoom(Hotel? hotel, Room room, User? user, DateTime checkInDate, DateTime checkOutDate, string location)
         {
-            PrintSearchHeader(hotel, user, checkInDate, checkOutDate, location);
+            PrintSearchHeader(hotel, user, checkInDate.ToShortDateString(), checkOutDate.ToShortDateString(), location);
 
             Console.WriteLine($"\tSelected room:\n" +
                               $"{room.RoomInfo()}");
@@ -300,12 +300,12 @@ namespace HotelRoomReservationSystem.Helpers
                                 $"\t2. Search again\n" +
                                 $"\t3. Cancel");
 
-
+            Console.Write("\n\n\tChoose an option: ");
             int choice = 0;
             while (!int.TryParse((Console.ReadLine() ?? "0"), out choice)
                 || !(choice >= 1 && choice <= 3))
             {
-                PrintSearchHeader(hotel, user, checkInDate, checkOutDate, location);
+                PrintSearchHeader(hotel, user, checkInDate.ToShortDateString(), checkOutDate.ToShortDateString(), location);
 
                 Console.WriteLine("\nInvalid option. Press any key to try again.");
                 Console.ReadKey();
@@ -325,7 +325,11 @@ namespace HotelRoomReservationSystem.Helpers
                     reservation.Id = GetMaxReservationId(reservations);
                     reservations.Add(reservation);
 
+
                     dataHelper.WriteUpdateReservations(reservations);
+
+                    PrintReservationInfo(reservation);
+
                     break;
                 case 2:
                     SearchForAvailableRooms(hotel, user);
@@ -333,10 +337,20 @@ namespace HotelRoomReservationSystem.Helpers
                 default:
                     return;
             }
+        }
 
-            Console.WriteLine();
-            // TODO = Print reservation info
+        public static void PrintReservationInfo(Reservation reservation)
+        {
+            Hotel? hotel = hotelHelper.GetHotelById(reservation.HotelId);
+            Room? room = roomHelper.GetRoomById(reservation.RoomId);
 
+            Console.WriteLine($"\tReservation ID: {reservation.Id}");
+            Console.WriteLine($"\tHotel: {((hotel == null) ? "<not found>" : hotel.Name)}");
+            Console.WriteLine($"\tRoom: {((room == null) ? "" : room.RoomPresentation())}");
+            Console.WriteLine($"\tCheck-in date: {reservation.CheckInDate.ToString("dd.MM.yyy")}");
+            Console.WriteLine($"\tCheck-out date: {reservation.CheckOutDate.ToString("dd.MM.yyy")}");
+            Console.WriteLine($"\tTotal price: {reservation.TotalPrice}");
+            Console.WriteLine($"\tStatus: {Enum.GetName(reservation.Status.GetType(), reservation.Status)}");
         }
 
         public void PrintUsersReservations(List<User> users, bool current = false, bool onlyActive = false)
@@ -344,7 +358,11 @@ namespace HotelRoomReservationSystem.Helpers
             List<Reservation> reservations = GetUserReservations(users.Select(u => u.Id).ToArray(), current, onlyActive);
 
             if (reservations.Count == 0)
+            {
+                Console.WriteLine("\n\tNo reservations found!");
                 return;
+            }
+                
 
             int[] hotelId = reservations.Select(r => r.HotelId).ToArray();
 
@@ -364,13 +382,135 @@ namespace HotelRoomReservationSystem.Helpers
                     foreach (Reservation reservation in reservationByHotel)
                     {
                         Console.WriteLine($"\t\tRoom \"{rooms[reservation.RoomId]}\", " +
-                            $"check-in \"{reservation.CheckInDate}\", " +
-                            $"check-out \"{reservation.CheckOutDate}\",\n" +
+                            $"check-in \"{reservation.CheckInDate.ToString("dd.MM.yyy")}\", " +
+                            $"check-out \"{reservation.CheckOutDate.ToString("dd.MM.yyy")}\",\n" +
                             $"\t\t\ttotal price \"{reservation.TotalPrice}\", " +
                             $"status \"{Enum.GetName(reservation.Status.GetType(), reservation.Status)}\"");
                     }
                 }
             }
+        }
+
+        private Reservation? SelectReservation(User? user)
+        {
+            if (user == null)
+                return null;
+
+            List<Reservation> reservations = GetUserReservations([ user.Id ], true, true);
+
+            if (reservations.Count == 0)
+            {
+                Console.WriteLine("\n\tNo reservations found!\n\n" +
+                                    "\tPress any key to continue...");
+                Console.ReadKey();
+                return null;
+            }
+
+            while (true)
+            {
+                Console.Clear();
+                Console.WriteLine($"\t\tReservations of user {user.Name}\n");
+
+                // TODO - status menu admin/user
+                int counter = 0;
+                foreach (Reservation r in reservations)
+                    Console.WriteLine($"\t{++counter}. {r.GetShortInfo()}");
+
+                Console.WriteLine($"\n\t{++counter}. Cancel");
+                Console.Write("\n\n\tChoose a reservation: ");
+
+                int choice;
+                Console.Write("\t");
+                if (int.TryParse((Console.ReadLine() ?? "0"), out choice))
+                {
+                    if (choice > 0 && choice <= reservations.Count)
+                        return reservations[choice - 1];
+                    else if (choice == counter)
+                        break;
+                    else
+                    {
+                        Console.Clear();
+                        Console.WriteLine("\n\tInvalid option.Press \"Esc\" for cancel or any other key to try again.");
+                        ConsoleKeyInfo userInput = Console.ReadKey();
+                        if (userInput.Key == ConsoleKey.Escape)
+                            return null;
+
+                    }
+                }
+            }
+
+            return null;
+        }
+
+        private void EditReservation(User? admin, User? user, Reservation reservation)
+        {
+            List<Reservation> reservations = GetReservations();
+
+            int statusIndex;
+            RoomStatus? status = null;
+            Hotel? hotel = null;
+            Room? room = null;
+            User? newUser = null;
+            DateTime? checkInDate = null;
+            DateTime? checkOutDate = null;
+
+            // Edit status
+            PrintReservationsManagmentHeader(admin, user, reservation);
+            Console.Write("\tChange Status? (\"Y/n\"): ");
+            if ((Console.ReadLine() ?? "n").ToLower() == "y")
+            {
+                var roomStatusType = typeof(RoomStatus);
+                int[] roomStatusValues = (int[])roomStatusType.GetEnumValues();
+
+                while (status == null)
+                {
+                    PrintReservationsManagmentHeader(admin, user, reservation);
+                    Console.WriteLine("\tCurrent status: \"{0}\"", Enum.GetName(roomStatusType, reservation.Status));
+                    
+                    int counter = 0;
+                    foreach (string s in Enum.GetNames(roomStatusType))
+                        Console.WriteLine($"\t{counter++}. {s}");
+                    Console.WriteLine($"\n\t{counter}. Cancel");
+
+                    Console.Write("Choise new status: ");
+                    if (!int.TryParse(Console.ReadLine() ?? "0", out statusIndex)
+                        || !(roomStatusValues.Contains(statusIndex) || statusIndex == counter))
+                    {
+
+                        PrintReservationsManagmentHeader(admin, user, reservation);
+                        Console.WriteLine("\tStatus not found");
+                        Console.WriteLine("\n\tPress \"Esc\" for cancel or any other key to continue...");
+                        ConsoleKeyInfo userInput = Console.ReadKey();
+                        if (userInput.Key == ConsoleKey.Escape)
+                            return;
+                    }
+                    else
+                    {
+                        if (statusIndex == counter)
+                            status = reservation.Status;
+                        else
+                            status = (RoomStatus)statusIndex;
+                    }
+                }
+            }
+            else
+                status = reservation.Status;
+
+            //Edit check-in and check-out dates
+            //Edit room
+            //Edit hotel
+            //Edit user
+
+            reservation.Status = (RoomStatus)status;
+
+            int index = reservations.FindIndex(r => r.Id == reservation.Id);
+            if (index == -1)
+                reservations.Add(reservation);
+            else
+                reservations[index] = reservation;
+
+            dataHelper.WriteUpdateReservations(reservations);
+
         }
 
         private Dictionary<int, string[]> GetReservationManagmentMenu(User? admin, User? user, Reservation? reservation)
@@ -390,8 +530,8 @@ namespace HotelRoomReservationSystem.Helpers
                     menu.Add(menu.Count, ["Edit Reservation", "4"]);
                     if (admin != null && admin.IsAdmin)
                         menu.Add(menu.Count, ["Delete Reservation", "5"]);
-                    menu.Add(menu.Count, ["View history of reservations", "6"]);
                 }
+                menu.Add(menu.Count, ["View history of reservations", "6"]);
             }
             menu.Add(menu.Count, ["< Back", "1000"]);
 
@@ -445,12 +585,21 @@ namespace HotelRoomReservationSystem.Helpers
                         }
                         break;
                     case "2": // Select Reservation
+                        if (user != null)
+                        {
+                            PrintReservationsManagmentHeader(admin, user, reservation);
+                            reservation = SelectReservation(user);
+                        }
                         break;
                     case "3": // Deselect Reservation
+                        reservation = null;
                         break;
                     case "4": // Edit Reservation
+                        if (reservation != null)
+                            EditReservation(admin, user, reservation);
                         break;
                     case "5": // Delete Reservation
+                        
                         break;
                     case "6": // View history of reservations
                         if (user != null)
@@ -482,7 +631,7 @@ namespace HotelRoomReservationSystem.Helpers
             if (reservation == null && user == null)
                 Console.Write($"\t\t");
             else
-                Console.Write($"Reservations:\t\t");
+                Console.Write($"Reservations\t\t");
 
             if (admin == null)
                 Console.Write($"\t\t0. Login");
@@ -491,13 +640,13 @@ namespace HotelRoomReservationSystem.Helpers
 
             // Print second row
             if (user != null)
-                Console.Write($"User: \"{user.Name}\"");
+                Console.Write($"\nUser: \"{user.Name}\"");
+            // Print third row
             if (reservation != null)
-                Console.Write($"Reservation: \"{reservation.Id.ToString()}\"");
+                Console.Write($"\n{reservation.GetShortInfo()}");
 
             Console.WriteLine("\n\n");
         }
-
 
         private int GetMaxReservationId(List<Reservation> reservations)
         {

@@ -27,6 +27,14 @@ namespace HotelRoomReservationSystem.Helpers
             return hotels;
         }
 
+        public Hotel? GetHotelById(int hotelId)
+        {
+            List<Hotel> hotels = GetHotels(new int[] { hotelId });
+            if (hotels.Count == 0)
+                return null;
+            return hotels[0];
+        }
+
         public void ShowAll()
         {
             Console.Clear();

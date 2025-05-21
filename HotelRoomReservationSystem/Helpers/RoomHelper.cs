@@ -25,6 +25,15 @@ namespace HotelRoomReservationSystem.Helpers
             return rooms;
         }
 
+        public Room? GetRoomById(int id)
+        {
+            List<Room> rooms = GetRooms(null);
+            rooms = rooms.Where(x => (x.Id == id)).ToList();
+            if (rooms.Count > 0)
+                return rooms[0];
+            return null;
+        }
+
         public List<RoomType> GetRoomTypes(int[]? hotelId = null)
         {
             string fileContent = dataHelper.GetFileContent("RoomTypes.json");
