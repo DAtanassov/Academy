@@ -35,26 +35,9 @@ namespace HotelRoomReservationSystem.Helpers
 
         }
 
-        public void DeleteHotelDataBase(Hotel hotel)
+        public void DeleteHotelDataBase(int hotelId)
         {
-            if (hotel.Id == 0)
-                return;
-
-            string fileContent = GetFileContent("RoomTypes.json");
-
-            List<RoomType>? roomTypes = new List<RoomType>();
-
-            if (!String.IsNullOrEmpty(fileContent))
-                roomTypes = JsonSerializer.Deserialize<List<RoomType>>(fileContent);
-
-            if (roomTypes != null && roomTypes.Count > 0)
-            {
-                roomTypes = roomTypes.Where(x => (x.Id != hotel.Id)).ToList();
-                WriteUpdateHotelRoomTypes(hotel, roomTypes);
-            }
-
-
-            fileContent = GetFileContent("RoomTypes.json");
+            string fileContent = GetFileContent("Rooms.json");
 
             List<Room>? rooms = new List<Room>();
 
@@ -63,12 +46,83 @@ namespace HotelRoomReservationSystem.Helpers
 
             if (rooms != null && rooms.Count > 0)
             {
-                rooms = rooms.Where(x => (x.Id != hotel.Id)).ToList();
-                WriteUpdateHotelRooms(hotel, rooms);
+                rooms = rooms.Where(x => (x.HotelId != hotelId)).ToList();
+                WriteUpdateHotelRooms(rooms);
             }
 
-            // TODO - Reservations.json
+            fileContent = GetFileContent("RoomTypes.json");
 
+            List<RoomType>? roomTypes = new List<RoomType>();
+
+            if (!String.IsNullOrEmpty(fileContent))
+                roomTypes = JsonSerializer.Deserialize<List<RoomType>>(fileContent);
+
+            if (roomTypes != null && roomTypes.Count > 0)
+            {
+                roomTypes = roomTypes.Where(x => (x.HotelId != hotelId)).ToList();
+                WriteUpdateHotelRoomTypes(roomTypes);
+            }
+
+
+            fileContent = GetFileContent("Reservations.json");
+
+            List<Reservation>? reservations = new List<Reservation>();
+
+            if (!String.IsNullOrEmpty(fileContent))
+                reservations = JsonSerializer.Deserialize<List<Reservation>>(fileContent);
+
+            if (reservations != null && reservations.Count > 0)
+            {
+                reservations = reservations.Where(x => (x.HotelId != hotelId)).ToList();
+                WriteUpdateReservations(reservations);
+            }
+
+        }
+
+        public void DeleteRoomDataBase(int roomId, int hotelId)
+        {
+            string fileContent = GetFileContent("Reservations.json");
+
+            List<Reservation>? reservations = new List<Reservation>();
+
+            if (!String.IsNullOrEmpty(fileContent))
+                reservations = JsonSerializer.Deserialize<List<Reservation>>(fileContent);
+
+            if (reservations != null && reservations.Count > 0)
+            {
+                reservations = reservations.Where(x => !(x.RoomId == roomId && x.HotelId == hotelId)).ToList();
+                WriteUpdateReservations(reservations);
+            }
+        }
+
+        public void DeleteRoomTypeDataBase(int roomTypeId, int hotelId)
+        {
+
+            string fileContent = GetFileContent("Rooms.json");
+
+            List<Room>? rooms = new List<Room>();
+
+            if (!String.IsNullOrEmpty(fileContent))
+                rooms = JsonSerializer.Deserialize<List<Room>>(fileContent);
+
+            if (rooms != null && rooms.Count > 0)
+            {
+                rooms = rooms.Where(x => !(x.RoomTypeId == roomTypeId && x.HotelId == hotelId)).ToList();
+                WriteUpdateHotelRooms(rooms);
+            }
+
+            fileContent = GetFileContent("Reservations.json");
+
+            List<Reservation>? reservations = new List<Reservation>();
+
+            if (!String.IsNullOrEmpty(fileContent))
+                reservations = JsonSerializer.Deserialize<List<Reservation>>(fileContent);
+
+            if (reservations != null && reservations.Count > 0)
+            {
+                reservations = reservations.Where(x => !(x.RoomTypeId == roomTypeId && x.HotelId == hotelId)).ToList();
+                WriteUpdateReservations(reservations);
+            }
         }
 
         public string GetFileContent(string path)
@@ -120,7 +174,7 @@ namespace HotelRoomReservationSystem.Helpers
 
         }
 
-        public void WriteUpdateHotelRoomTypes(Hotel hotel, List<RoomType> roomTypes)
+        public void WriteUpdateHotelRoomTypes(List<RoomType> roomTypes)
         {
             string dbPath = "RoomTypes.json";
             string fileContent = JsonSerializer.Serialize(roomTypes);
@@ -128,7 +182,7 @@ namespace HotelRoomReservationSystem.Helpers
             WriteUpdateFile(dbPath, fileContent);
         }
         
-        public void WriteUpdateHotelRooms(Hotel hotel, List<Room> rooms)
+        public void WriteUpdateHotelRooms(List<Room> rooms)
         {
             string dbPath = "Rooms.json";
             string fileContent = JsonSerializer.Serialize(rooms);

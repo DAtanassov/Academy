@@ -23,17 +23,20 @@ namespace HotelRoomReservationSystem.Models
         public int HotelId { get; set; }
 
         public Room() { }
-        public Room(int number, int roomTypeId)
+
+        public Room(int number, int roomTypeId, int hotelId)
         {
             this.Number = number;
             this.RoomTypeId = roomTypeId;
+            this.HotelId = hotelId;
             this.PricePerNight = 0m;
             this.CancellationFee = 0m;
         }
-        public Room(int number, int roomTypeId, decimal pricePerNight, decimal cancellationFee)
+        public Room(int number, int roomTypeId, int hotelId, decimal pricePerNight, decimal cancellationFee)
         {
             this.Number = number;
             this.RoomTypeId = roomTypeId;
+            this.HotelId = hotelId;
             this.PricePerNight = pricePerNight;
             this.CancellationFee = cancellationFee;
         }
@@ -65,8 +68,7 @@ namespace HotelRoomReservationSystem.Models
 
         private RoomType? GetRoomTypeById()
         {
-            RoomHelper roomHelper = new RoomHelper();
-            return roomHelper.GetRoomTypeById(RoomTypeId, HotelId);
+            return new HotelHelper().GetRoomTypeById(RoomTypeId, HotelId);
         }
     }
 }

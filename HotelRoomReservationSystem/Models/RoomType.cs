@@ -3,9 +3,9 @@
     public class RoomType
     {
         public int Id { get; set; }
-        public string Name { get; set; }
+        public string Name { get; set; } = "";
         public int HotelId { get; set; }
-        public List<string> Amenities { get; set; }
+        public List<string> Amenities { get; set; } = new List<string>();
         public int MaximumOccupancy {  get; set; }
         
         public RoomType() { }

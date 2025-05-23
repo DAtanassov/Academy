@@ -3,12 +3,12 @@
     public class User
     {
         public int Id { get; set; }
-        public string Name { get; set; }
-        public string Username { get; set; }
-        public string Password { get; set; }
-        public string Email { get; set; }
-        public string Phone { get; set; }
-        public string Address { get; set; }
+        public string Name { get; set; } = "";
+        public string Username { get; set; } = "";
+        public string Password { get; set; } = "";
+        public string Email { get; set; } = "";
+        public string Phone { get; set; } = "";
+        public string Address { get; set; } = "";
         public bool IsAdmin { get; set; }
         public bool Deactivated { get; set; }
 
@@ -25,9 +25,9 @@
             this.Deactivated = false;
         }
 
-        public string UserInfo(User printingUser)
+        public string GetInfo(User user)
         {
-            if (!(printingUser.Id == Id || printingUser.IsAdmin))
+            if (!(user.Id == Id || user.IsAdmin))
                 return "";
 
             return $"\tID: {Id}\n" + 
@@ -35,10 +35,15 @@
                    $"\te-mail: {Email}\n" +
                    $"\tUsername: {Username}\n" +
                    $"\tPassword: {Password}\n" +
-                   $"\tPhone: {Phone}" +
+                   $"\tPhone: {Phone}\n" +
                    $"\tAddress: {Address}\n" +
                    $"\tAdministrator: {((IsAdmin) ? "yes" : "no")}\n" +
                    $"\tDeactivated: {((Deactivated) ? "yes" : "no" )}";
+        }
+
+        public string GetShortInfo(bool showAdminStatus = false)
+        {
+            return $"Name {Name}, id {Id}" + ((showAdminStatus && IsAdmin) ? " (administrator)" : "");
         }
     }
 }

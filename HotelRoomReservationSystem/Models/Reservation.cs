@@ -16,6 +16,7 @@ namespace HotelRoomReservationSystem.Models
         public DateTime CreationDate { get; set; }
 
         public Reservation() { }
+        
         public Reservation(int userId, Room room, DateTime checkInDate, DateTime checkOutDate)
         {
             this.UserId = userId;
@@ -43,8 +44,9 @@ namespace HotelRoomReservationSystem.Models
 
         public string GetShortInfo()
         {
-            Hotel? hotel = new HotelHelper().GetHotelById(HotelId);
-            Room? room = new RoomHelper().GetRoomById(RoomId);
+            HotelHelper hotelHelper = new HotelHelper();
+            Hotel? hotel = hotelHelper.GetHotelById(HotelId);
+            Room? room = hotelHelper.GetRoomById(RoomId, HotelId);
 
             return $"Reservation ID: {Id}, " +
                    $"Hotel ID: {HotelId}, " +
@@ -52,6 +54,11 @@ namespace HotelRoomReservationSystem.Models
                    $"Check-in: {CheckInDate.ToShortDateString()}, " +
                    $"Check-out: {CheckOutDate.ToShortDateString()}, " +
                    $"Status: {Enum.GetName(Status.GetType(), Status)}";
+        }
+
+        public string GetReservationID()
+        {
+            return $"{Id}-{HotelId}";
         }
     }
 }
