@@ -974,7 +974,7 @@ namespace HotelRoomReservationSystem.Helpers
             Console.WriteLine("\n\n");
         }
 
-        private int GetMaxId(List<Hotel> list)
+        private static int GetMaxId(List<Hotel> list)
         {
             if (list.Count == 0)
                 return 1;
@@ -983,21 +983,29 @@ namespace HotelRoomReservationSystem.Helpers
             return ++maxId;
         }
 
-        private int GetMaxId(List<Room> list, int hotelId)
+        private static int GetMaxId(List<Room> list, int hotelId)
         {
             if (list.Count == 0)
                 return 1;
             
-            int maxId = list.Where(r => r.HotelId == hotelId).ToList().Max(x => x.Id);
+            list = list.Where(r => r.HotelId == hotelId).ToList();
+            if (list.Count == 0)
+                return 1;
+
+            int maxId = list.Max(x => x.Id);
             return ++maxId;
         }
 
-        private int GetMaxId(List<RoomType> list, int hotelId)
+        private static int GetMaxId(List<RoomType> list, int hotelId)
         {
             if (list.Count == 0)
                 return 1;
-            
-            int maxId = list.Where(r => r.HotelId == hotelId).ToList().Max(x => x.Id);
+
+            list = list.Where(r => r.HotelId == hotelId).ToList();
+            if (list.Count == 0)
+                return 1;
+
+            int maxId = list.Max(x => x.Id);
             return ++maxId;
         }
         
