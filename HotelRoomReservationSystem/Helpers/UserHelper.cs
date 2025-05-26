@@ -1,8 +1,6 @@
-﻿using System.Net.Mail;
-using System.Runtime.InteropServices.Marshalling;
-using System.Text;
+﻿using HotelRoomReservationSystem.Models;
 using System.Text.Json;
-using HotelRoomReservationSystem.Models;
+using System.Net.Mail;
 
 namespace HotelRoomReservationSystem.Helpers
 {
@@ -380,9 +378,9 @@ namespace HotelRoomReservationSystem.Helpers
 
             email = email.ToLower().Trim();
 
-            if (user.Name == name && user.Email == email && user.Deactivated == deactivated
+            if ((user.Name == name && user.Email == email && user.Deactivated == deactivated
                 && user.Username == username && user.Password == password
-                && user.Phone == phone && user.Address == address)
+                && user.Phone == phone && user.Address == address))
             {
                 Console.WriteLine("\tThe user not changed.");
                 Console.WriteLine("\tPress any key to continue...");
@@ -444,16 +442,20 @@ namespace HotelRoomReservationSystem.Helpers
             Console.ReadKey();
         }
 
-        public User? SelectUser(User admin, User? user)
+        public User? SelectUser(User? admin, User? user)
         {
-            List<User> users = GetUsers();
-            if (user != null)
-                users = users.Where(u => u.Id != admin.Id && u.Id != ((User)user).Id).ToList();
-            else
-                users = users.Where(u => u.Id != admin.Id).ToList();
+            List<User> users = new List<User>();
+
+            if (admin != null && admin.IsAdmin)
+                users = GetUsers();
+            else if (admin != null)
+                users.Add(admin);
+
+            if (user != null && (admin != null && admin.IsAdmin))
+                users = users.Where(u => u.Id != ((User)user).Id).ToList();
 
             if (users.Count == 0)
-                return null;
+                return user;
 
             Console.Clear();
             Console.WriteLine($"\tUser accounts:\n");
@@ -477,13 +479,15 @@ namespace HotelRoomReservationSystem.Helpers
                     else
                     {
                         Console.Clear();
-                        Console.WriteLine("\nInvalid option. Press any key to try again.");
-                        Console.ReadKey();
+                        Console.WriteLine("\nInvalid option. Press \"Esc\" for cancel or any other key to continue...");
+                        ConsoleKeyInfo userInput = Console.ReadKey();
+                        if (userInput.Key == ConsoleKey.Escape)
+                            break;
                     }
                 }
             }
 
-            return null;
+            return user;
         }
 
         public void PrintUserProfileHeader(User? user, Reservation? reservation)

@@ -42,21 +42,21 @@ namespace HotelRoomReservationSystem.Models
             this.CreationDate = DateTime.Now;
         }
 
-        public string GetShortInfo()
+        public string ShortInfo()
         {
             HotelHelper hotelHelper = new HotelHelper();
             Hotel? hotel = hotelHelper.GetHotelById(HotelId);
             Room? room = hotelHelper.GetRoomById(RoomId, HotelId);
 
-            return $"Reservation ID: {Id}, " +
-                   $"Hotel ID: {HotelId}, " +
-                   $"Room ID: {RoomId}, " +
+            return $"Reservation ID: {ReservationID()}, " +
+                   ((hotel == null) ? "" : $"Hotel ID: {hotel.ShortInfo()}, ") +
+                   ((room == null) ? "" : $"Room ID: {room.Presentation()}, ") +
                    $"Check-in: {CheckInDate.ToShortDateString()}, " +
                    $"Check-out: {CheckOutDate.ToShortDateString()}, " +
                    $"Status: {Enum.GetName(Status.GetType(), Status)}";
         }
 
-        public string GetReservationID()
+        public string ReservationID()
         {
             return $"{Id}-{HotelId}";
         }

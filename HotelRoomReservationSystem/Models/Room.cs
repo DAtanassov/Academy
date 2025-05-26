@@ -41,7 +41,7 @@ namespace HotelRoomReservationSystem.Models
             this.CancellationFee = cancellationFee;
         }
 
-        public string RoomPresentation(bool showStatus = false)
+        public string Presentation(bool showStatus = false)
         {
             RoomType? roomType = GetRoomTypeById();
 
@@ -69,6 +69,10 @@ namespace HotelRoomReservationSystem.Models
         private RoomType? GetRoomTypeById()
         {
             return new HotelHelper().GetRoomTypeById(RoomTypeId, HotelId);
+        }
+        public string RoomID()
+        {
+            return $"{Id}-{HotelId}";
         }
     }
 }

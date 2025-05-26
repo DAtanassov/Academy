@@ -1,6 +1,5 @@
-﻿using System.Text.Json;
-using System.Xml.Linq;
-using HotelRoomReservationSystem.Models;
+﻿using HotelRoomReservationSystem.Models;
+using System.Text.Json;
 
 namespace HotelRoomReservationSystem.Helpers
 {
@@ -46,19 +45,18 @@ namespace HotelRoomReservationSystem.Helpers
 
             int counter = 0;
             foreach (Hotel h in hotels)
-                Console.WriteLine($"\t{++counter}. {h.Name}");
+                Console.WriteLine($"\t{++counter}. {h.ShortInfo()}");
 
             Console.WriteLine("\n\tPress any key to continue...");
             Console.ReadKey();
         }
 
-        public Hotel? SelectHotel()
+        public Hotel? SelectHotel(Hotel? hotel = null)
         {
-
             List<Hotel> hotels = GetHotels();
 
             if (hotels.Count == 0)
-                return null;
+                return hotel;
 
             while (true)
             {
@@ -82,13 +80,16 @@ namespace HotelRoomReservationSystem.Helpers
                     else
                     {
                         Console.Clear();
-                        Console.WriteLine("\nInvalid option. Press any key to try again.");
-                        Console.ReadKey();
+                        Console.WriteLine("\nInvalid option. Press \"Esc\" for cancel or any other key to continue...");
+                        ConsoleKeyInfo userInput = Console.ReadKey();
+                        if (userInput.Key == ConsoleKey.Escape)
+                            break;
+
                     }
                 }
             }
 
-            return null;
+            return hotel;
         }
 
         public Hotel? AddHotel()
@@ -364,6 +365,22 @@ namespace HotelRoomReservationSystem.Helpers
             Console.WriteLine("\n\n");
         }
 
+        public List<Hotel> GetManageringHotels(int userId)
+        {
+            List<Hotel> hotels = GetHotels();
+
+            return hotels.Where(h => h.ManagerId == userId).ToList();
+
+        }
+
+        public bool UserIsHotelManager(int userId, int hotelId = 0)
+        {
+            List<Hotel> hotels = GetManageringHotels(userId);
+            if (hotelId == 0)
+                return hotels.Count > 0;
+
+            return hotels.Where(h => h.Id == hotelId).Count() > 0;
+        }
         //################################ Room #####################################
 
         public List<Room> GetRooms(int[]? hotelId = null)
@@ -407,7 +424,7 @@ namespace HotelRoomReservationSystem.Helpers
 
             int counter = 0;
             foreach (Room r in rooms)
-                Console.WriteLine($"\t{++counter}. {r.RoomPresentation()}");
+                Console.WriteLine($"\t{++counter}. {r.Presentation()}");
 
             Console.WriteLine("\n\tPress any key to continue...");
             Console.ReadKey();
@@ -480,7 +497,7 @@ namespace HotelRoomReservationSystem.Helpers
 
                 int counter = 0;
                 foreach (Room r in rooms)
-                    Console.WriteLine($"\t{++counter}. {r.RoomPresentation()}");
+                    Console.WriteLine($"\t{++counter}. {r.Presentation()}");
 
                 Console.WriteLine($"\n\t{++counter}. Cancel");
                 Console.Write("\n\n\tChoose a room: ");
@@ -675,7 +692,7 @@ namespace HotelRoomReservationSystem.Helpers
             Console.Clear();
 
             // Print first row (Room)
-            Console.Write($"Edit room: \"{room.RoomPresentation()}\"");
+            Console.Write($"Edit room: \"{room.Presentation()}\"");
 
             Console.WriteLine("\n\n");
         }
@@ -946,6 +963,7 @@ namespace HotelRoomReservationSystem.Helpers
 
             return false;
         }
+        
         public void PrintRoomTypeEditHeader(RoomType roomType)
         {
             Console.Clear();

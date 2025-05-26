@@ -8,7 +8,7 @@ namespace HotelRoomReservationSystem.Helpers
         public void CreateDataBaseStructure()
         {
 
-            string dbDirPath = AppDomain.CurrentDomain.BaseDirectory + "\\Data\\";
+            string dbDirPath = AppDomain.CurrentDomain.BaseDirectory + "/Data/"; //"\\Data\\";
             if (!Directory.Exists(dbDirPath))
             {
                 try
@@ -127,7 +127,7 @@ namespace HotelRoomReservationSystem.Helpers
 
         public string GetFileContent(string path)
         {
-            string dbDirPath = AppDomain.CurrentDomain.BaseDirectory + "\\Data\\";
+            string dbDirPath = AppDomain.CurrentDomain.BaseDirectory + "/Data/"; //"\\Data\\";
             string dbPath = dbDirPath + path;
 
             if (!Directory.Exists(dbDirPath))
@@ -199,7 +199,7 @@ namespace HotelRoomReservationSystem.Helpers
 
         public void WriteUpdateFile(string path, string fileContent)
         {
-            string dbDirPath = AppDomain.CurrentDomain.BaseDirectory + "\\Data\\";
+            string dbDirPath = AppDomain.CurrentDomain.BaseDirectory + "/Data/"; //"\\Data\\";
             string dbPath = dbDirPath + path;
 
             if (!Directory.Exists(dbDirPath))
