@@ -1,10 +1,8 @@
 ﻿namespace HotelRoomReservationSystem.Models
 {
-    public class RoomType
+    public class RoomType : HotelModel
     {
-        public int Id { get; set; }
         public string Name { get; set; } = "";
-        public int HotelId { get; set; }
         public List<string> Amenities { get; set; } = new List<string>();
         public int MaximumOccupancy {  get; set; }
         
@@ -24,5 +22,16 @@
             this.MaximumOccupancy = maximumOccupancy;
         }
 
+        public override string Info()
+        {
+            return Name;
+        }
+
+        public override string ShortInfo()
+        {
+            return Name;
+        }
+
+        public override string GetId() => $"{Id}-{HotelId}";
     }
 }

@@ -1,5 +1,4 @@
 ﻿using HotelRoomReservationSystem.Models;
-using System.Text.Json;
 
 namespace HotelRoomReservationSystem.Helpers
 {
@@ -8,24 +7,9 @@ namespace HotelRoomReservationSystem.Helpers
         private static DataHelper dataHelper = new DataHelper();
         private static HotelHelper hotelHelper = new HotelHelper();
 
-        public List<Reservation> GetReservations()
-        {
-            string fileContent = dataHelper.GetFileContent("Reservations.json");
-
-            List<Reservation>? reservations = new List<Reservation>();
-
-            if (!String.IsNullOrEmpty(fileContent))
-                reservations = JsonSerializer.Deserialize<List<Reservation>>(fileContent);
-
-            if (reservations == null)
-                return new List<Reservation>();
-
-            return reservations;
-        }
-
         public List<Reservation> GetUserReservations(int[] userId, bool current = false, bool onlyActive = false)
         {
-            List<Reservation> reservations = GetReservations();
+            List<Reservation> reservations = DataHelper.GetReservationList();
 
             RoomStatus[] statuses = { RoomStatus.booked, RoomStatus.ocupated };
 
@@ -41,9 +25,9 @@ namespace HotelRoomReservationSystem.Helpers
             return reservations.Where(u => userId.Contains(u.UserId)).ToList();
         }
 
-        public List<Reservation> GetHotelReservations(int[] hotelId, bool current = false, bool onlyActive = false)
+        public static List<Reservation> GetHotelReservations(int[] hotelId, bool current = false, bool onlyActive = false)
         {
-            List<Reservation> reservations = GetReservations();
+            List<Reservation> reservations = DataHelper.GetReservationList();
 
             RoomStatus[] statuses = { RoomStatus.booked, RoomStatus.ocupated };
 
@@ -61,13 +45,13 @@ namespace HotelRoomReservationSystem.Helpers
 
         public List<Reservation> GetRoomReservations(int[] roomId)
         {
-            List<Reservation> reservations = GetReservations();
+            List<Reservation> reservations = DataHelper.GetReservationList();
             return reservations.Where(r => roomId.Contains(r.RoomId)).ToList();
         }
 
-        public void CheckAndCancelExpiredReservations()
+        public static void CheckAndCancelExpiredReservations()
         {
-            List<Reservation> reservations = GetReservations();
+            List<Reservation> reservations = DataHelper.GetReservationList();
             if (reservations.Count == 0) return;
             
             DateTime toDate = DateTime.Today.Date.AddHours(12); // cancel reservation if not changet to "ocupated" befor 12h
@@ -82,7 +66,7 @@ namespace HotelRoomReservationSystem.Helpers
                 }
             }
 
-            dataHelper.WriteUpdateReservations(reservations);
+            DataHelper.UpdateReservations(reservations);
 
         }
 
@@ -92,7 +76,7 @@ namespace HotelRoomReservationSystem.Helpers
             
             List<Hotel> hotels;
             if (hotel == null)
-                hotels = hotelHelper.GetHotels();
+                hotels = HotelHelper.GetHotels();
             else
                 hotels = new List<Hotel> { hotel };
 
@@ -100,16 +84,16 @@ namespace HotelRoomReservationSystem.Helpers
             if (!string.IsNullOrEmpty(location))
             {
                 hotels = hotels.Where(h => h.Address.Contains(location)).ToList();
-                rooms = hotelHelper.GetRooms(hotels.Select(h => h.Id).ToArray());
+                rooms = RoomHelper.GetRooms(hotels.Select(h => h.Id).ToArray());
             }
             else if (hotel != null)
-                rooms = hotelHelper.GetRooms([hotel.Id]);
+                rooms = RoomHelper.GetRooms([hotel.Id]);
             else
-                rooms = hotelHelper.GetRooms();
+                rooms = RoomHelper.GetRooms();
 
             RoomStatus[] roomStatuses = { RoomStatus.booked, RoomStatus.ocupated };
 
-            List<Reservation> reservations = GetReservations();
+            List<Reservation> reservations = DataHelper.GetReservationList();
             int[] roomsId = reservations.Where(r => (roomStatuses.Contains(r.Status) &&
                                                     ((r.CheckInDate <= checkInDate && checkInDate <= r.CheckOutDate)
                                                     || (r.CheckInDate <= checkOutDate && checkOutDate <= r.CheckOutDate)
@@ -124,13 +108,10 @@ namespace HotelRoomReservationSystem.Helpers
 
         public void BookTheRoom(Room room, User user, DateTime checkInDate, DateTime checkOutDate, string location)
         {
-            List<Reservation> reservations = GetReservations();
+            List<Reservation> reservations = DataHelper.GetReservationList();
 
             Reservation reservation = new Reservation(user.Id, room, checkInDate, checkOutDate, RoomStatus.booked);
-            reservation.Id = GetMaxId(reservations, room.HotelId);
-
-            reservations.Add(reservation);
-            dataHelper.WriteUpdateReservations(reservations);
+            DataHelper.InsertReservations([reservation]);
 
             PrintReservationInfo(reservation);
 
@@ -138,12 +119,12 @@ namespace HotelRoomReservationSystem.Helpers
 
         public static void PrintReservationInfo(Reservation reservation)
         {
-            Hotel? hotel = hotelHelper.GetHotelById(reservation.HotelId);
-            Room? room = hotelHelper.GetRoomById(reservation.RoomId, reservation.HotelId);
+            Hotel? hotel = HotelHelper.GetHotelById(reservation.HotelId);
+            Room? room = RoomHelper.GetRoomById(reservation.RoomId, reservation.HotelId);
 
             Console.WriteLine($"\tReservation ID: {reservation.Id}");
             Console.WriteLine($"\tHotel: {((hotel == null) ? "<not found>" : hotel.Name)}");
-            Console.WriteLine($"\tRoom: {((room == null) ? "" : room.Presentation())}");
+            Console.WriteLine($"\tRoom: {((room == null) ? "" : room.ShortInfo())}");
             Console.WriteLine($"\tCheck-in date: {reservation.CheckInDate.ToShortDateString()}");
             Console.WriteLine($"\tCheck-out date: {reservation.CheckOutDate.ToShortDateString()}");
             Console.WriteLine($"\tTotal price: {reservation.TotalPrice}");
@@ -162,8 +143,8 @@ namespace HotelRoomReservationSystem.Helpers
             
             int[] hotelId = reservations.Select(r => r.HotelId).Distinct().ToArray();
 
-            Dictionary<int, string> hotels = hotelHelper.GetHotels(hotelId).ToDictionary(h => h.Id, h => h.Name);
-            Dictionary<string, string> rooms = hotelHelper.GetRooms(hotelId).ToDictionary(r => r.RoomID(), r => r.Presentation());
+            Dictionary<int, string> hotels = HotelHelper.GetHotels(hotelId).ToDictionary(h => h.Id, h => h.Name);
+            Dictionary<string, string> rooms = RoomHelper.GetRooms(hotelId).ToDictionary(r => r.GetId(), r => r.ShortInfo());
 
             foreach (User user in users)
             {
@@ -204,7 +185,7 @@ namespace HotelRoomReservationSystem.Helpers
 
             hotelId = reservations.Select(r => r.HotelId).Distinct().ToArray();
 
-            Dictionary<string, string> rooms = hotelHelper.GetRooms(hotelId).ToDictionary(r => r.RoomID(), r => r.Presentation());
+            Dictionary<string, string> rooms = RoomHelper.GetRooms(hotelId).ToDictionary(r => r.GetId(), r => r.ShortInfo());
 
             foreach (Hotel hotel in hotels)
             {
@@ -257,7 +238,7 @@ namespace HotelRoomReservationSystem.Helpers
                 // TODO - status menu admin/user
                 int counter = 0;
                 foreach (Reservation r in reservations)
-                    Console.WriteLine($"\t{++counter}. {r.ShortInfo()}");
+                    Console.WriteLine($"\t{++counter}. {r.Info()}");
 
                 Console.WriteLine($"\n\t{++counter}. Cancel");
                 Console.Write("\n\n\tChoose a reservation: ");
@@ -287,7 +268,7 @@ namespace HotelRoomReservationSystem.Helpers
 
         public bool EditReservation(User? admin, User? user, Hotel? hotel, Reservation reservation)
         {
-            List<Reservation> reservations = GetReservations();
+            List<Reservation> reservations = DataHelper.GetReservationList();
 
             int statusIndex;
             RoomStatus? status = null;
@@ -357,7 +338,7 @@ namespace HotelRoomReservationSystem.Helpers
             else
                 reservations[index] = reservation;
 
-            dataHelper.WriteUpdateReservations(reservations);
+            DataHelper.UpdateReservations(reservations);
 
             return true;
 
@@ -365,7 +346,7 @@ namespace HotelRoomReservationSystem.Helpers
 
         public bool DeleteReservation(Reservation reservation)
         {
-            List<Reservation> reservations = GetReservations();
+            List<Reservation> reservations = DataHelper.GetReservationList();
             int index = reservations.FindIndex(r => r.Id == reservation.Id && r.HotelId == reservation.HotelId);
 
             if (index == -1)
@@ -377,13 +358,13 @@ namespace HotelRoomReservationSystem.Helpers
 
             Console.Clear();
             
-            Console.WriteLine($"\t{reservation.ShortInfo()}");
+            Console.WriteLine($"\t{reservation.Info()}");
             Console.Write($"\tDelete reservation? (\"Y/n\"): ");
             if ((Console.ReadLine() ?? "n").ToLower() != "y")
                 return false;
 
             reservations.RemoveAt(index);
-            dataHelper.WriteUpdateReservations(reservations);
+            DataHelper.UpdateReservations(reservations);
             return true;
         }
 
@@ -408,21 +389,12 @@ namespace HotelRoomReservationSystem.Helpers
 
             // Print third row
             if (reservation != null)
-                Console.WriteLine("\n{0}", reservation.ShortInfo());
+                Console.WriteLine("\n{0}", reservation.Info());
             else if (hotel != null)
                 Console.WriteLine("\n{0}", hotel.ShortInfo());
 
 
             Console.WriteLine("\n\n");
-        }
-
-        private int GetMaxId(List<Reservation> list, int hotelId)
-        {
-            if (list.Count == 0)
-                return 1;
-
-            int maxId = list.Where(r => r.HotelId == hotelId).ToList().Max(x => x.Id);
-            return ++maxId;
         }
     }
 }
