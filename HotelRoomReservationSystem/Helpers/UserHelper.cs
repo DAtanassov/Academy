@@ -1,5 +1,4 @@
 ﻿using HotelRoomReservationSystem.Models;
-using System.Text.Json;
 using System.Net.Mail;
 
 namespace HotelRoomReservationSystem.Helpers
@@ -8,24 +7,9 @@ namespace HotelRoomReservationSystem.Helpers
     {
         private static DataHelper dataHelper = new DataHelper();
 
-        private List<User> GetUsers()
+        public static bool isAdminRegistered()
         {
-            string fileContent = dataHelper.GetFileContent("Users.json");
-
-            List<User>? users = new List<User>();
-
-            if (!String.IsNullOrEmpty(fileContent))
-                users = JsonSerializer.Deserialize<List<User>>(fileContent);
-
-            if (users == null)
-                return new List<User>();
-
-            return users;
-        }
-
-        public bool isAdminRegistered()
-        {
-            List<User> users = GetUsers();
+            List<User> users = DataHelper.GetUserList();
 
             if (users.Count > 0)
             {
@@ -36,9 +20,9 @@ namespace HotelRoomReservationSystem.Helpers
             return false;
         }
 
-        public User? GetUser(string username, string password)
+        public static User? GetUser(string username, string password)
         {
-            List<User> users = GetUsers();
+            List<User> users = DataHelper.GetUserList();
 
             users = users.Where(u => (u.Username == username && u.Password == password)).ToList();
             if (users.Count == 0)
@@ -63,7 +47,7 @@ namespace HotelRoomReservationSystem.Helpers
             return user;
         }
 
-        public User? UserLogin()
+        public static User? UserLogin()
         {
             Console.Clear();
             Console.Write("\n\tUsername: ");
@@ -84,7 +68,7 @@ namespace HotelRoomReservationSystem.Helpers
                 Console.Write(additionalText);
         }
 
-        private string GetEmailAddress()
+        private static string GetEmailAddress()
         {
             string email = (Console.ReadLine() ?? string.Empty).Trim();
             while (!ValidateEmailAddress(email))
@@ -97,9 +81,9 @@ namespace HotelRoomReservationSystem.Helpers
             return email;
         }
 
-        public User AddUser(bool userIsAdmin)
+        public static User AddUser(bool userIsAdmin)
         {
-            List<User> users = GetUsers();
+            List<User> users = DataHelper.GetUserList();
 
             PrintAddUserHeader("\tName: ");
             string name = Console.ReadLine() ?? string.Empty;
@@ -147,13 +131,10 @@ namespace HotelRoomReservationSystem.Helpers
             string password = Console.ReadLine() ?? "1234";
 
             User user = new User(name, email, username, password, userIsAdmin);
-            user.Id = GetMaxUserId(users);
-
-            users.Add(user);
-            dataHelper.WriteUpdateUsers(users);
+            DataHelper.InsertUsers([user]);
 
             PrintAddUserHeader("\tCreated user:\n");
-            Console.WriteLine($"{user.GetInfo(user)}");
+            Console.WriteLine($"{user.Info()}");
             Console.WriteLine("\n\tPress any key to continue...");
             Console.ReadKey();
 
@@ -161,12 +142,12 @@ namespace HotelRoomReservationSystem.Helpers
 
         }
 
-        public bool EditUser(User admin, User user)
+        public static bool EditUser(User admin, User user)
         {
             if (!(admin == user || admin.IsAdmin))
                 return false;
 
-            List<User> users = GetUsers();
+            List<User> users = DataHelper.GetUserList();
 
             string name = user.Name;
             string email = user.Email;
@@ -403,51 +384,51 @@ namespace HotelRoomReservationSystem.Helpers
             else
                 users[index] = user;
 
-            dataHelper.WriteUpdateUsers(users);
+            DataHelper.UpdateUsers(users);
 
             return true;
         }
 
-        public void DeleteUser(User user)
+        public static void DeleteUser(User user)
         {
             Console.Clear();
             Console.Write($"\tDelete user \"{user.Name}\" and all data for the user? (\"Y/n\"): ");
             if ((Console.ReadLine() ?? "n").ToLower() != "y")
                 return;
 
-            List<User> users = GetUsers();
+            List<User> users = DataHelper.GetUserList();
             int index = users.FindIndex(u => u.Id == user.Id);
             if (index == -1)
                 return;
 
             users.RemoveAt(index);
-            dataHelper.WriteUpdateUsers(users);
+            DataHelper.UpdateUsers(users);
 
         }
 
-        public void ShowAll(User? admin = null)
+        public static void ShowAll(User? admin = null)
         {
             Console.Clear();
             Console.WriteLine("\t\tUsers\n");
 
-            List<User> users = GetUsers();
+            List<User> users = DataHelper.GetUserList();
             if (admin  != null)
                 users = users.Where(u => u.Id != ((User)admin).Id).ToList();
 
             int counter = 0;
             foreach (User u in users)
-                Console.WriteLine($"\t{++counter}. {u.GetShortInfo(true)}");
+                Console.WriteLine($"\t{++counter}. {u.ShortInfo()}");
 
             Console.WriteLine("\n\tPress any key to continue...");
             Console.ReadKey();
         }
 
-        public User? SelectUser(User? admin, User? user)
+        public static User? SelectUser(User? admin, User? user)
         {
             List<User> users = new List<User>();
 
             if (admin != null && admin.IsAdmin)
-                users = GetUsers();
+                users = DataHelper.GetUserList();
             else if (admin != null)
                 users.Add(admin);
 
@@ -464,7 +445,7 @@ namespace HotelRoomReservationSystem.Helpers
             {
                 int counter = 0;
                 foreach (User u in users)
-                    Console.WriteLine($"\t{++counter}. {u.GetShortInfo()}");
+                    Console.WriteLine($"\t{++counter}. {u.ShortInfo()}");
 
                 Console.WriteLine($"\n\t{++counter}. Cancel");
                 Console.Write("\n\n\tChoose user: ");
@@ -490,25 +471,7 @@ namespace HotelRoomReservationSystem.Helpers
             return user;
         }
 
-        public void PrintUserProfileHeader(User? user, Reservation? reservation)
-        {
-            Console.Clear();
-
-            // Print first row (reservation, User)
-            if (reservation == null)
-                Console.Write($"\t\t");
-            else
-                Console.Write($"Edit reservation ID: \"{reservation.Id.ToString()}\"");
-
-            if (user == null)
-                Console.Write($"\t\t0. Login");
-            else
-                Console.Write($"\t\tUser: \"{user.Name}\" (0. Logout)");
-
-            Console.WriteLine("\n\n");
-        }
-
-        public void PrintUserManagmentHeader(User? admin, User? user, Reservation? reservation)
+        public static void PrintUserManagmentHeader(User? admin, User? user, Reservation? reservation)
         {
             Console.Clear();
 
@@ -532,7 +495,7 @@ namespace HotelRoomReservationSystem.Helpers
             Console.WriteLine("\n\n");
         }
 
-        private bool ValidateEmailAddress(string email)
+        private static bool ValidateEmailAddress(string email)
         {
             try
             {
@@ -547,14 +510,6 @@ namespace HotelRoomReservationSystem.Helpers
 
         // TODO - Encrypt, Decript password
 
-        private int GetMaxUserId(List<User> users)
-        {
-            if (users.Count == 0)
-                return 1;
-
-            int maxId = users.Max(x => x.Id);
-            return ++maxId;
-        }
     }
 
 }

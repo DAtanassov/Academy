@@ -1,8 +1,8 @@
 ﻿namespace HotelRoomReservationSystem.Models
 {
-    public class User
+    public class User : Model
     {
-        public int Id { get; set; }
+        //public int Id { get; set; }
         public string Name { get; set; } = "";
         public string Username { get; set; } = "";
         public string Password { get; set; } = "";
@@ -25,11 +25,8 @@
             this.Deactivated = false;
         }
 
-        public string GetInfo(User user)
+        public override string Info()
         {
-            if (!(user.Id == Id || user.IsAdmin))
-                return "";
-
             return $"\tID: {Id}\n" + 
                    $"\tName: {Name}\n" +
                    $"\te-mail: {Email}\n" +
@@ -41,9 +38,9 @@
                    $"\tDeactivated: {((Deactivated) ? "yes" : "no" )}";
         }
 
-        public string GetShortInfo(bool showAdminStatus = false)
+        public override string ShortInfo()
         {
-            return $"Name {Name}, id {Id}" + ((showAdminStatus && IsAdmin) ? " (administrator)" : "");
+            return $"Name {Name}, id {Id}" + ((IsAdmin) ? " (admin)" : "");
         }
     }
 }

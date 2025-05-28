@@ -9,17 +9,14 @@ namespace HotelRoomReservationSystem
     {
         private static User? user;
 
-        private static DataHelper dataHelper = new DataHelper();
-        private static UserHelper userHelper = new UserHelper();
-        private static HotelHelper hotelHelper = new HotelHelper();
         private static ReservationHelper reservationHelper = new ReservationHelper();
 
         static void Main(string[] args)
         {
             // Creating database files if not exist
-            CreateDatabase();
+            DataHelper.CreateDataBase();
 
-            while(!userHelper.isAdminRegistered())
+            while (!UserHelper.isAdminRegistered())
             {
                 Console.WriteLine("\n\n");
                 Console.WriteLine("\t1. Create Administrator");
@@ -36,26 +33,16 @@ namespace HotelRoomReservationSystem
                     continue;
                 }
                 else if (choice == 1)
-                    user = userHelper.AddUser(true);
+                    user = UserHelper.AddUser(true);
                 else if (choice == 2)
                     Environment.Exit(0);
             }
 
-            CheckAndCancelExpiredReservations();
+            ReservationHelper.CheckAndCancelExpiredReservations();
 
             MainMenu();
 
             Environment.Exit(0);
-        }
-
-        private static void CreateDatabase()
-        {
-            dataHelper.CreateDataBaseStructure();
-        }
-
-        private static void CheckAndCancelExpiredReservations()
-        {
-            reservationHelper.CheckAndCancelExpiredReservations();
         }
 
         // ############################# Main menu ####################################
@@ -78,7 +65,7 @@ namespace HotelRoomReservationSystem
 
             menu.Add(menu.Count, ["Login/Logout", "0"]);
 
-            bool hotelManager = (user != null && hotelHelper.UserIsHotelManager(user.Id));
+            bool hotelManager = (user != null && HotelHelper.UserIsHotelManager(user.Id));
             bool isAdmin = (user != null && user.IsAdmin);
 
             menu.Add(menu.Count, ["Search", "1"]);
@@ -131,7 +118,7 @@ namespace HotelRoomReservationSystem
                 {
                     case "0": // login/Logout
                         if (user == null)
-                            user = userHelper.UserLogin();
+                            user = UserHelper.UserLogin();
                         else
                         {
                             PrintMainMenuHeader();
@@ -229,7 +216,7 @@ namespace HotelRoomReservationSystem
                 }
                 else if (choice == 1)
                 {
-                    hotel = hotelHelper.SelectHotel();
+                    hotel = HotelHelper.SelectHotel();
                     break;
                 }
                 else if (choice == 2)
@@ -287,7 +274,7 @@ namespace HotelRoomReservationSystem
 
             List<Hotel> hotels;
             if (hotel == null)
-                hotels = hotelHelper.GetHotels();
+                hotels = HotelHelper.GetHotels();
             else
                 hotels = new List<Hotel> { hotel };
 
@@ -318,7 +305,7 @@ namespace HotelRoomReservationSystem
                     List<Room> hRooms = rooms.Where(r => r.HotelId == h.Id).OrderBy(o => o.Number).ToList();
                     foreach (Room r in hRooms)
                     {
-                        Console.WriteLine($"\t\t{++counter}. {r.Presentation()}");
+                        Console.WriteLine($"\t\t{++counter}. {r.ShortInfo()}");
                         menu.Add(counter, r);
                     }
                 }
@@ -328,7 +315,7 @@ namespace HotelRoomReservationSystem
                 rooms = rooms.OrderBy(o => o.HotelId).ThenBy(o => o.Number).ToList();
                 foreach (Room r in rooms)
                 {
-                    Console.WriteLine($"\t{++counter}. {r.Presentation()}");
+                    Console.WriteLine($"\t{++counter}. {r.ShortInfo()}");
                     menu.Add(counter, r);
                 }
 
@@ -352,14 +339,13 @@ namespace HotelRoomReservationSystem
             {
                 PrintSearchMenuHeader(hotel, checkInDate, checkOutDate, location);
 
-                UserHelper userHelper = new UserHelper();
                 Console.Clear();
                 Console.Write("\n\tUsername: ");
                 string username = Console.ReadLine() ?? "";
                 Console.Clear();
                 Console.Write("\n\tPassword: ");
                 string password = Console.ReadLine() ?? "";
-                user = userHelper.GetUser(username, password);
+                user = UserHelper.GetUser(username, password);
                 if (user == null)
                 {
                     PrintSearchMenuHeader(hotel, checkInDate, checkOutDate, location);
@@ -376,7 +362,7 @@ namespace HotelRoomReservationSystem
 
             PrintSearchMenuHeader(hotel, checkInDate, checkOutDate, location);
             Console.WriteLine($"\tSelected room:\n" +
-                              $"{room.RoomInfo()}");
+                              $"{room.Info()}");
 
             Console.WriteLine($"\n\t1. Book the room\n" +
                                 $"\t2. Search again\n" +
@@ -400,7 +386,25 @@ namespace HotelRoomReservationSystem
         }
 
         // ############################# Users managment ##############################
-        
+
+        public static void PrintUserProfileHeader(Reservation? reservation)
+        {
+            Console.Clear();
+
+            // Print first row (reservation, User)
+            if (reservation == null)
+                Console.Write($"\t\t");
+            else
+                Console.Write($"Edit reservation ID: \"{reservation.Id.ToString()}\"");
+
+            if (user == null)
+                Console.Write($"\t\t0. Login");
+            else
+                Console.Write($"\t\tUser: \"{user.Name}\" (0. Logout)");
+
+            Console.WriteLine("\n\n");
+        }
+
         private static Dictionary<int, string[]> GetUserProfileMenu(Reservation? reservation)
         {
             Dictionary<int, string[]> menu = new Dictionary<int, string[]>();
@@ -426,7 +430,7 @@ namespace HotelRoomReservationSystem
 
             while (running)
             {
-                userHelper.PrintUserProfileHeader(user, reservation);
+                PrintUserProfileHeader(reservation);
 
                 Dictionary<int, string[]> menu = GetUserProfileMenu(reservation);
 
@@ -454,10 +458,10 @@ namespace HotelRoomReservationSystem
                 {
                     case "0": // login/Logout
                         if (user == null)
-                            user = userHelper.UserLogin();
+                            user = UserHelper.UserLogin();
                         else
                         {
-                            userHelper.PrintUserProfileHeader(user, reservation);
+                            PrintUserProfileHeader(reservation);
                             Console.Write("\tAre you sure to logout? (\"Y/n\"): ");
                             if ((Console.ReadLine() ?? "n").ToLower() == "y")
                                 user = null;
@@ -468,22 +472,22 @@ namespace HotelRoomReservationSystem
                     case "1": // View profile
                         if (user != null)
                         {
-                            userHelper.PrintUserProfileHeader(user, reservation);
-                            Console.WriteLine(user.GetInfo(user));
+                            PrintUserProfileHeader(reservation);
+                            Console.WriteLine(user.Info());
                             Console.WriteLine("\n\tPress any key to continue...");
                             Console.ReadKey();
                         }
                         break;
                     case "2": // Edit profile
-                        if (user != null && userHelper.EditUser(user, user))
+                        if (user != null && UserHelper.EditUser(user, user))
                         {
-                            userHelper.PrintUserProfileHeader(user, reservation);
+                            PrintUserProfileHeader(reservation);
                             Console.WriteLine("\tProfile edited successfully!");
-                            user.GetInfo(user);
+                            user.Info();
                         }
                         else
                         {
-                            userHelper.PrintUserProfileHeader(user, reservation);
+                            PrintUserProfileHeader(reservation);
                             Console.WriteLine("\tProfile not changed.");
                         }
                         Console.WriteLine("\n\tPress any key to continue...");
@@ -492,9 +496,9 @@ namespace HotelRoomReservationSystem
                     case "3": // Delete profile
                         if (user != null)
                         {
-                            userHelper.PrintUserProfileHeader(user, reservation);
+                            PrintUserProfileHeader(reservation);
                             string name = user.Name;
-                            userHelper.DeleteUser(user);
+                            UserHelper.DeleteUser(user);
                             running = false;
                             user = null;
                             reservation = null;
@@ -558,7 +562,7 @@ namespace HotelRoomReservationSystem
 
             while (running)
             {
-                userHelper.PrintUserManagmentHeader(user, sUser, reservation);
+                UserHelper.PrintUserManagmentHeader(user, sUser, reservation);
 
                 Dictionary<int, string[]> menu = GetUsersManagmentMenu(sUser, reservation);
 
@@ -586,39 +590,39 @@ namespace HotelRoomReservationSystem
                 {
                     case "0": // login/Logout
                         if (user == null)
-                            user = userHelper.UserLogin();
+                            user = UserHelper.UserLogin();
                         else
                         {
-                            userHelper.PrintUserManagmentHeader(user, sUser, reservation);
+                            UserHelper.PrintUserManagmentHeader(user, sUser, reservation);
                             Console.Write("\tAre you sure to logout? (\"Y/n\"): ");
                             if ((Console.ReadLine() ?? "n").ToLower() == "y")
                                 user = null;
                         }
                         break;
                     case "1": // View users
-                        userHelper.PrintUserManagmentHeader(user, sUser, reservation);
-                        userHelper.ShowAll(user);
+                        UserHelper.PrintUserManagmentHeader(user, sUser, reservation);
+                        UserHelper.ShowAll(user);
                         break;
                     case "2": // Add user
-                        userHelper.AddUser(false);
+                        UserHelper.AddUser(false);
                         break;
                     case "3": // Edit user
                         if (user != null && sUser == null)
                         {
-                            userHelper.PrintUserManagmentHeader(user, sUser, reservation);
-                            sUser = userHelper.SelectUser(user, sUser);
+                            UserHelper.PrintUserManagmentHeader(user, sUser, reservation);
+                            sUser = UserHelper.SelectUser(user, sUser);
                         }
                         if (user != null && sUser != null)
                         {
-                            if (userHelper.EditUser(user, sUser))
+                            if (UserHelper.EditUser(user, sUser))
                             {
-                                userHelper.PrintUserManagmentHeader(user, sUser, reservation);
+                                UserHelper.PrintUserManagmentHeader(user, sUser, reservation);
                                 Console.WriteLine("\tProfile edited successfully!");
-                                sUser.GetInfo(sUser);
+                                sUser.Info();
                             }
                             else
                             {
-                                userHelper.PrintUserManagmentHeader(user, sUser, reservation);
+                                UserHelper.PrintUserManagmentHeader(user, sUser, reservation);
                                 Console.WriteLine("\tProfile not changed.");
                             }
                             Console.WriteLine("\n\tPress any key to continue...");
@@ -631,19 +635,19 @@ namespace HotelRoomReservationSystem
                     case "5": // Edit another user
                         if (user != null)
                         {
-                            userHelper.PrintUserManagmentHeader(user, sUser, reservation);
-                            sUser = userHelper.SelectUser(user, sUser);
+                            UserHelper.PrintUserManagmentHeader(user, sUser, reservation);
+                            sUser = UserHelper.SelectUser(user, sUser);
                             if (sUser != null)
                             {
-                                if (userHelper.EditUser(user, sUser))
+                                if (UserHelper.EditUser(user, sUser))
                                 {
-                                    userHelper.PrintUserManagmentHeader(user, sUser, reservation);
+                                    UserHelper.PrintUserManagmentHeader(user, sUser, reservation);
                                     Console.WriteLine("\tProfile edited successfully!");
-                                    sUser.GetInfo(sUser);
+                                    sUser.Info();
                                 }
                                 else
                                 {
-                                    userHelper.PrintUserManagmentHeader(user, sUser, reservation);
+                                    UserHelper.PrintUserManagmentHeader(user, sUser, reservation);
                                     Console.WriteLine("\tProfile not changed.");
                                 }
                                 Console.WriteLine("\n\tPress any key to continue...");
@@ -654,9 +658,9 @@ namespace HotelRoomReservationSystem
                     case "6": // Delete user
                         if (sUser != null && user != sUser)
                         {
-                            userHelper.PrintUserManagmentHeader(user, sUser, reservation);
+                            UserHelper.PrintUserManagmentHeader(user, sUser, reservation);
                             string name = sUser.Name;
-                            userHelper.DeleteUser(sUser);
+                            UserHelper.DeleteUser(sUser);
                             sUser = null;
                             reservation = null;
                             Console.WriteLine($"\tUser \"{name}\" delete successfully.");
@@ -672,7 +676,7 @@ namespace HotelRoomReservationSystem
                         Console.Clear();
                         break;
                     case "1000":
-                        userHelper.PrintUserManagmentHeader(user, sUser, reservation);
+                        UserHelper.PrintUserManagmentHeader(user, sUser, reservation);
                         Console.Write("\tExit application? (\"Y/n\"): ");
                         if ((Console.ReadLine() ?? "n").ToLower() != "y")
                             continue;
@@ -688,7 +692,25 @@ namespace HotelRoomReservationSystem
         }
 
         // ############################# Hotels managment #############################
-        
+
+        public static void PrintHotelEditHeader(Hotel? hotel)
+        {
+            Console.Clear();
+
+            // Print first row (Hotel, User)
+            if (hotel == null)
+                Console.Write($"\t\t");
+            else
+                Console.Write($"Hotel: \"{hotel.Name}\"");
+
+            if (user == null)
+                Console.Write($"\t\t0. Login");
+            else
+                Console.Write($"\t\tUser: \"{user.Name}\" (0. Logout)");
+
+            Console.WriteLine("\n\n");
+        }
+
         private static Dictionary<int, string[]> GetHotelManagmentMenu()
         {
             Dictionary<int, string[]> menu = new Dictionary<int, string[]>();
@@ -696,7 +718,7 @@ namespace HotelRoomReservationSystem
             menu.Add(menu.Count, ["Login/Logout", "0"]);
             menu.Add(menu.Count, ["View hotels", "1"]);
 
-            bool hotelManager = (user != null && hotelHelper.UserIsHotelManager(user.Id));
+            bool hotelManager = (user != null && HotelHelper.UserIsHotelManager(user.Id));
             bool isAdmin = (user != null && user.IsAdmin);
             
             if (isAdmin || hotelManager)
@@ -722,7 +744,7 @@ namespace HotelRoomReservationSystem
 
             while (running)
             {
-                hotelHelper.PrintHotelEditHeader(user, hotel);
+                PrintHotelEditHeader(hotel);
 
                 Dictionary<int, string[]> menu = GetHotelManagmentMenu();
 
@@ -750,10 +772,10 @@ namespace HotelRoomReservationSystem
                 {
                     case "0": // login/Logout
                         if (user == null)
-                            user = userHelper.UserLogin();
+                            user = UserHelper.UserLogin();
                         else
                         {
-                            hotelHelper.PrintHotelEditHeader(user, hotel);
+                            PrintHotelEditHeader(hotel);
                             Console.Write("\tAre you sure to logout? (\"Y/n\"): ");
                             if ((Console.ReadLine() ?? "n").ToLower() == "y")
                                 user = null;
@@ -762,24 +784,24 @@ namespace HotelRoomReservationSystem
                             running = false;
                         break;
                     case "1": // View hotels
-                        hotelHelper.ShowAll();
+                        HotelHelper.ShowAll();
                         break;
                     case "2": // Add hotel
-                        hotelHelper.AddHotel();
+                        hotel = HotelHelper.AddHotel();
                         break;
                     case "3": // Edit hotel
-                        hotelHelper.PrintHotelEditHeader(user, hotel);
-                        hotel = hotelHelper.SelectHotel();
+                        PrintHotelEditHeader(hotel);
+                        hotel = HotelHelper.SelectHotel();
                         if (hotel != null)
-                            hotelHelper.EditHotel(hotel);
+                            EditHotel(hotel);
                         hotel = null;
                         break;
                     case "4": // Delete hotel
-                        hotelHelper.PrintHotelEditHeader(user, hotel);
-                        hotel = hotelHelper.SelectHotel();
+                        PrintHotelEditHeader(hotel);
+                        hotel = HotelHelper.SelectHotel();
                         if (hotel != null)
                         {
-                            if (hotelHelper.DeleteHotel(hotel))
+                            if (HotelHelper.DeleteHotel(hotel))
                             {
                                 // TODO - Message
                                 hotel = null;
@@ -795,7 +817,7 @@ namespace HotelRoomReservationSystem
                         Console.Clear();
                         break;
                     case "1000":
-                        hotelHelper.PrintHotelEditHeader(user, hotel);
+                        PrintHotelEditHeader(hotel);
                         Console.Write("\tExit application? (\"Y/n\"): ");
                         if ((Console.ReadLine() ?? "n").ToLower() != "y")
                             continue;
@@ -810,6 +832,187 @@ namespace HotelRoomReservationSystem
             }
         }
 
+        private static Dictionary<int, string[]> GetHotelEditMenu(bool isAdmin)
+        {
+            Dictionary<int, string[]> menu = new Dictionary<int, string[]>();
+
+            if (isAdmin)
+            {
+                menu.Add(menu.Count + 1, ["Delete hotel", "220"]);
+                menu.Add(menu.Count + 1, ["Change name", "221"]);
+
+            }
+            menu.Add(menu.Count + 1, ["Room managment", "300"]);
+            menu.Add(menu.Count + 1, ["< Back", "1000"]);
+            return menu;
+        }
+
+        public static void EditHotel(Hotel? hotel)
+        {
+            bool running = true;
+            if (hotel == null)
+                return;
+
+            Dictionary<int, string[]> menu = GetHotelEditMenu(true);
+
+            while (running)
+            {
+                if (hotel == null)
+                    return;
+
+                // TODO - Print edit hotel header
+                Console.Clear();
+                Console.WriteLine($"\t\tEdit hotel {hotel.Name}\n\n");
+                foreach (var element in menu)
+                    Console.WriteLine($"\t{element.Key}. {element.Value[0]}");
+
+                Console.Write("\n\n\tChoose an option: ");
+                int choice;
+                if (!int.TryParse((Console.ReadLine() ?? "0"), out choice)
+                    || !menu.ContainsKey(choice))
+                {
+                    Console.Clear();
+                    Console.WriteLine("\nInvalid option. Press any key to try again.");
+                    Console.ReadKey();
+                    continue;
+                }
+
+                string option = menu[choice][1];
+
+                switch (option)
+                {
+                    case "220": // Delete hotel
+                        if (HotelHelper.DeleteHotel(hotel))
+                        {
+                            // TODO - Message
+                            running = false;
+                            hotel = null;
+                        }
+                        break;
+                    case "222": // Change name
+                        hotel = HotelHelper.ChangeName(hotel);
+                        break;
+                    case "300": // Room managment
+                        RoomManagment(hotel);
+                        break;
+                    case "1000":
+                        running = false;
+                        break;
+                    default:
+                        Console.Clear();
+                        Console.WriteLine("\nInvalid option. Press any key to try again.");
+                        Console.ReadKey();
+                        break;
+                }
+
+            }
+        }
+
+        // ############################# Room managment ###############################
+
+        private static Dictionary<int, string[]> GetHotelRoomManagmentMenu(bool isAdmin)
+        {
+            Dictionary<int, string[]> menu = new Dictionary<int, string[]>();
+
+            menu.Add(menu.Count + 1, ["Show rooms", "1"]);
+            menu.Add(menu.Count + 1, ["Show room types", "2"]);
+            if (isAdmin)
+            {
+                menu.Add(menu.Count + 1, ["Add room", "3"]);
+                menu.Add(menu.Count + 1, ["Edit room", "4"]);
+                menu.Add(menu.Count + 1, ["Delete room", "5"]);
+
+                menu.Add(menu.Count + 1, ["Add room type", "6"]);
+                menu.Add(menu.Count + 1, ["Edit room type", "7"]);
+                menu.Add(menu.Count + 1, ["Delete room type", "8"]);
+
+            }
+            menu.Add(menu.Count + 1, ["< Back", "1000"]);
+
+            return menu;
+        }
+
+        public static void RoomManagment(Hotel hotel)
+        {
+            bool running = true;
+
+            Room? room;
+            RoomType? roomType;
+
+            Dictionary<int, string[]> menu = GetHotelRoomManagmentMenu(true);
+
+            while (running)
+            {
+                // TODO - Print Room managment header
+                Console.Clear();
+                Console.WriteLine($"\t\tEdit rooms in hotel {hotel.Name}\n\n");
+                foreach (var element in menu)
+                    Console.WriteLine($"\t{element.Key}. {element.Value[0]}");
+
+                Console.Write("\n\n\tChoose an option: ");
+                int choice;
+                if (!int.TryParse((Console.ReadLine() ?? "0"), out choice)
+                    || !menu.ContainsKey(choice))
+                {
+                    Console.Clear();
+                    Console.WriteLine("\nInvalid option. Press any key to try again.");
+                    Console.ReadKey();
+                    continue;
+                }
+
+                string option = menu[choice][1];
+
+                switch (option)
+                {
+
+                    case "1": // Show rooms
+                        RoomHelper.ShowAllRooms(hotel);
+                        break;
+                    case "2": // Show room types
+                        RoomTypeHelper.ShowAllRoomTypes(hotel);
+                        break;
+                    case "3": // Add room
+                        room = RoomHelper.AddRoom(hotel);
+                        break;
+                    case "4": // Edit room
+                        room = RoomHelper.SelectRoom(hotel);
+                        if (room != null)
+                            RoomHelper.EditRoom(room);
+                        room = null;
+                        break;
+                    case "5": // Delete room
+                        room = RoomHelper.SelectRoom(hotel);
+                        if (room != null)
+                            RoomHelper.DeleteRoom(room);
+                        room = null;
+                        break;
+                    case "6": // Add room type
+                        roomType = RoomTypeHelper.AddRoomType(hotel);
+                        break;
+                    case "7": // Edit room type
+                        roomType = RoomTypeHelper.SelectRoomType(hotel);
+                        if (roomType != null) 
+                            RoomTypeHelper.EditRoomType(roomType);
+                        break;
+                    case "8": // Delete room type
+                        roomType = RoomTypeHelper.SelectRoomType(hotel);
+                        if (roomType != null)
+                            RoomTypeHelper.DeleteRoomType(roomType);
+                        roomType = null;
+                        break;
+                    case "1000":
+                        running = false;
+                        break;
+                    default:
+                        Console.Clear();
+                        Console.WriteLine("\nInvalid option. Press any key to try again.");
+                        Console.ReadKey();
+                        break;
+                }
+
+            }
+        }
+
         // ############################# Reservations managment #######################
 
         private static Dictionary<int, string[]> GetReservationsManagmentMenu()
@@ -818,7 +1021,7 @@ namespace HotelRoomReservationSystem
 
             menu.Add(menu.Count, ["Login/Logout", "0"]);
 
-            bool hotelManager = (user != null && hotelHelper.UserIsHotelManager(user.Id));
+            bool hotelManager = (user != null && HotelHelper.UserIsHotelManager(user.Id));
             bool isAdmin = (user != null && user.IsAdmin);
 
             if (user != null)
@@ -881,7 +1084,7 @@ namespace HotelRoomReservationSystem
                 {
                     case "0": // login/Logout
                         if (user == null)
-                            user = userHelper.UserLogin();
+                            user = UserHelper.UserLogin();
                         else
                         {
                             reservationHelper.PrintReservationsManagmentHeader(user, sUser, sHotel, sReservation);
@@ -922,12 +1125,12 @@ namespace HotelRoomReservationSystem
                         }
                         break;
                     case "3": // Edit/Delete by user
-                        sUser = userHelper.SelectUser(user, sUser);
+                        sUser = UserHelper.SelectUser(user, sUser);
                         if (sUser != null)
                             sHotel = null;
                         break;
                     case "4": // Edit/Delete by hotel
-                        sHotel = hotelHelper.SelectHotel(sHotel);
+                        sHotel = HotelHelper.SelectHotel(sHotel);
                         if (sHotel != null)
                             sUser = null;
                         break;

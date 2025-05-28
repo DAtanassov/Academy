@@ -13,14 +13,14 @@ namespace HotelRoomReservationSystem.Models
         completed = 6
     }
 
-    public class Room
+    public class Room : RoomModel
     {
-        public int Id { get; set; }
+        //public int Id { get; set; }
         public int Number { get; set; }
-        public int RoomTypeId { get; set; }
+        //public int RoomTypeId { get; set; }
         public decimal PricePerNight { get; set; }
         public decimal CancellationFee { get; set; }
-        public int HotelId { get; set; }
+        //public int HotelId { get; set; }
 
         public Room() { }
 
@@ -32,6 +32,7 @@ namespace HotelRoomReservationSystem.Models
             this.PricePerNight = 0m;
             this.CancellationFee = 0m;
         }
+        
         public Room(int number, int roomTypeId, int hotelId, decimal pricePerNight, decimal cancellationFee)
         {
             this.Number = number;
@@ -41,9 +42,9 @@ namespace HotelRoomReservationSystem.Models
             this.CancellationFee = cancellationFee;
         }
 
-        public string Presentation(bool showStatus = false)
+        public override string ShortInfo()
         {
-            RoomType? roomType = GetRoomTypeById();
+            RoomType? roomType = RoomTypeHelper.GetRoomTypeById(RoomTypeId, HotelId);
 
             if (roomType == null)
                 return $"{Number}";
@@ -51,13 +52,11 @@ namespace HotelRoomReservationSystem.Models
             return $"{roomType.Name} {Number}";
         }
 
-        // TODO - RoomPresentation with status 
-
-        public string RoomInfo() 
+        public override string Info() 
         {
             // TODO - add more room type and Hotel info
 
-            RoomType? roomType = GetRoomTypeById();
+            RoomType? roomType = RoomTypeHelper.GetRoomTypeById(RoomTypeId, HotelId);
 
             return $"\t\tNumber: {Number},\n" +
                     ((roomType == null) ? "" : $"\t\ttype: {roomType.Name},\n") +
@@ -65,11 +64,7 @@ namespace HotelRoomReservationSystem.Models
                     $"\t\tcancellation fee: {CancellationFee},\n";
                     //$"\t\tstatus {status}";
         }
-
-        private RoomType? GetRoomTypeById()
-        {
-            return new HotelHelper().GetRoomTypeById(RoomTypeId, HotelId);
-        }
+        
         public string RoomID()
         {
             return $"{Id}-{HotelId}";
