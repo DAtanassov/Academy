@@ -4,7 +4,7 @@ namespace HotelRoomReservationSystem.Helpers
 {
     public class RoomTypeHelper
     {
-        private static List<RoomType> GetRoomTypes(int[]? hotelId = null)
+        public static List<RoomType> GetRoomTypes(int[]? hotelId = null)
         {
             List<RoomType>? roomTypes = DataHelper.GetRoomTypeList();
 
@@ -17,10 +17,10 @@ namespace HotelRoomReservationSystem.Helpers
         public static RoomType? GetRoomTypeById(int id, int hotelId)
         {
             List<RoomType> roomTypes = GetRoomTypes([hotelId]);
-            return GetRoomTypeById(id, roomTypes);
+            return GetRoomTypeById(roomTypes, id);
         }
 
-        private static RoomType? GetRoomTypeById(int id, List<RoomType> roomTypes)
+        private static RoomType? GetRoomTypeById(List<RoomType> roomTypes, int id)
         {
             roomTypes = roomTypes.Where(x => (x.Id == id)).ToList();
 
@@ -30,7 +30,60 @@ namespace HotelRoomReservationSystem.Helpers
             return null;
         }
 
-        public static void ShowAllRoomTypes(Hotel hotel)
+        public RoomType? SelectRoomType(Hotel hotel)
+        {
+            List<RoomType> roomTypes = GetRoomTypes([hotel.Id]);
+
+            if (roomTypes.Count == 0)
+                return null;
+
+            RoomType? roomType = null;
+
+            Console.CursorVisible = false;
+            MenuHelper menuHelper = new MenuHelper();
+            menuHelper.PrintAppName();
+            Console.WriteLine("\t\tHotel\n");
+
+            var menuParams = new MenuHelper.MenuParams();
+            (menuParams.left, menuParams.top) = Console.GetCursorPosition();
+            menuParams.choice = 0;
+
+            Func<string[], string[]> rName = (string[] n) => n;
+            Dictionary<int, string[]> menu = roomTypes.Select((val, index) => new { Index = index, Value = val })
+                                                    .ToDictionary(r => r.Index, r => rName([r.Value.ShortInfo(), r.Value.Id.ToString()]));
+            menu.Add(menu.Count, ["Cancel", "0"]);
+
+            bool running = true;
+            while (running)
+            {
+                Console.SetCursorPosition(menuParams.left, menuParams.top);
+
+                menuHelper.PrintMenuElements(menu, menuParams, false);
+
+                menuParams.key = Console.ReadKey(false);
+
+                switch (menuParams.key.Key)
+                {
+                    case ConsoleKey.UpArrow:
+                        menuParams.choice = menuParams.choice == 0 ? menu.Count - 1 : menuParams.choice - 1;
+                        continue;
+
+                    case ConsoleKey.DownArrow:
+                        menuParams.choice = menuParams.choice == menu.Count - 1 ? 0 : menuParams.choice + 1;
+                        continue;
+
+                    case ConsoleKey.Enter:
+                        if (menuParams.choice != menu.Count - 1)
+                            roomType = GetRoomTypeById(roomTypes, int.Parse(menu[menuParams.choice][1]));
+                        running = false;
+                        break;
+                }
+            }
+
+            return roomType;
+        }
+
+        public static void PrintRoomTypes(Hotel hotel)
         {
             Console.Clear();
             Console.WriteLine($"\n\t\tRoom types in hotel \"{hotel.Name}\"\n");
@@ -45,198 +98,286 @@ namespace HotelRoomReservationSystem.Helpers
             Console.ReadKey();
         }
 
-        public static RoomType? AddRoomType(Hotel hotel)
+        public bool AddRoomType(Hotel hotel)
+            => AddEditRoomType(new RoomType("", hotel.Id), hotel);
+
+        public bool EditRoomType(RoomType roomType)
+            => AddEditRoomType(roomType);
+
+        private bool AddEditRoomType(RoomType roomType, Hotel? hotel = null)
         {
-            Console.Clear();
-            Console.WriteLine($"\n\t\tAdding room type in hotel \"{hotel.Name}\"\n");
+            bool addNew = hotel != null;
+            if (!addNew)
+                hotel = (new HotelHelper()).GetHotelById(roomType.HotelId);
 
-            List<RoomType> roomTypes = GetRoomTypes(null);
+            if (addNew && hotel != null)
+                roomType.HotelId = hotel.Id;
 
-            Console.Write("\tRoom type name: ");
-            string name = Console.ReadLine() ?? string.Empty;
+            List<RoomType> roomTypes = GetRoomTypes();
+            List<RoomType> hotelRoomTypes = roomTypes.Where(r => r.HotelId == roomType.HotelId && r.Id != roomType.Id).ToList();
 
-            if (string.IsNullOrEmpty(name))
+            Console.CursorVisible = false;
+            MenuHelper menuHelper = new MenuHelper();
+            menuHelper.PrintAppName();
+            string title = $"\t\t{(addNew ? "Creat" : "Edit")} room type{((hotel == null) ? "" : (" in " + hotel.ShortInfo()))} \n";
+            Console.WriteLine(title);
+
+            var menuParams = new MenuHelper.MenuParams();
+            (menuParams.left, menuParams.top) = Console.GetCursorPosition();
+            
+            bool cancel = false;
+            bool running = true;
+            while (running)
             {
-                Console.WriteLine("Name cannot be empty!\nRoom type not created.");
-                return null;
-            }
+                Console.SetCursorPosition(menuParams.left, menuParams.top);
 
-            List<string> amenities = new List<string>();
-            Console.Clear();
-            Console.Write($"\tAdd room type amenities? (\"Y/n\"): ");
-            if ((Console.ReadLine() ?? "n").ToLower() == "y")
-            {
-                string amenitiesName;
-                while (true)
+                Console.WriteLine($"\t{(menuParams.choice == 1 ? menuParams.prefix : "  ")}1. Name: {roomType.Name}\u001b[0m");
+                Console.WriteLine($"\t{(menuParams.choice == 2 ? menuParams.prefix : "  ")}2. Maximum occupancy: {roomType.MaximumOccupancy} \u001b[0m");
+                Console.WriteLine($"\t{(menuParams.choice == 3 ? menuParams.prefix : "  ")}3. Add amenities \u001b[0m");
+                Console.WriteLine($"\t{(menuParams.choice == 4 ? menuParams.prefix : "  ")}4. Remove amenities \u001b[0m");
+                Console.WriteLine($"\t{(menuParams.choice == 5 ? menuParams.prefix : "  ")}5. Save\u001b[0m");
+                Console.WriteLine($"\t{(menuParams.choice == 6 ? menuParams.prefix : "  ")}6. Cancel\u001b[0m");
+
+                menuParams.key = Console.ReadKey(false);
+
+                switch (menuParams.key.Key)
                 {
-                    Console.Clear();
-                    Console.Write("\t");
-                    amenitiesName = Console.ReadLine() ?? string.Empty;
-                    if (!string.IsNullOrEmpty(amenitiesName))
-                        amenities.Add(amenitiesName);
+                    case ConsoleKey.UpArrow:
+                        menuParams.choice = menuParams.choice == 1 ? 6 : menuParams.choice - 1;
+                        continue;
 
-                    Console.Clear();
-                    Console.Write($"\tAdd more? (\"Y/n\"): ");
-                    if ((Console.ReadLine() ?? "n").ToLower() != "y")
+                    case ConsoleKey.DownArrow:
+                        menuParams.choice = menuParams.choice == 6 ? 1 : menuParams.choice + 1;
+                        continue;
+
+                    case ConsoleKey.Enter:
+
+                        Console.CursorVisible = true;
+
+                        switch (menuParams.choice)
+                        {
+                            case 1:
+                                while (true)
+                                {
+                                    menuHelper.PrintAppName();
+                                    Console.WriteLine(title);
+                                    Console.Write("\tName: ");
+                                    roomType.Name = Console.ReadLine() ?? string.Empty;
+                                    if (Validator.NameValidate(roomType.Name, roomType.Id, roomType.HotelId, hotelRoomTypes))
+                                        break;
+                                    else
+                                    {
+                                        menuHelper.PrintAppName();
+                                        Console.WriteLine(title);
+                                        if (String.IsNullOrEmpty(roomType.Name))
+                                            Console.WriteLine("\tName cannot be empty!");
+                                        else
+                                            Console.WriteLine("\tName is used!");
+                                        Console.WriteLine("\n\tPress \"Esc\" for cancel or any other key to continue...");
+                                        ConsoleKeyInfo userInput = Console.ReadKey();
+                                        if (userInput.Key == ConsoleKey.Escape)
+                                        {
+                                            cancel = true;
+                                            running = false;
+                                            break;
+                                        }
+                                    }
+                                }
+                                break;
+                            case 2:
+                                while (true)
+                                {
+                                    menuHelper.PrintAppName();
+                                    Console.WriteLine(title);
+                                    Console.Write("\tMaximum occupancy: ");
+                                    if (int.TryParse(Console.ReadLine() ?? "0", out int MaximumOccupancy))
+                                    {
+                                        if (MaximumOccupancy == 0m || MaximumOccupancy < 0m)
+                                        {
+                                            menuHelper.PrintAppName();
+                                            Console.WriteLine(title);
+                                            Console.Write("\tMaximum occupancy is \"{0}\". Continue? (\"Y/n\"): ", MaximumOccupancy);
+                                            if ((Console.ReadLine() ?? "n").ToLower() == "y")
+                                                roomType.MaximumOccupancy = MaximumOccupancy;
+                                            else
+                                                continue;
+                                        }
+                                        else
+                                        {
+                                            roomType.MaximumOccupancy = MaximumOccupancy;
+                                            break;
+                                        }
+                                    }
+                                }
+                                break;
+                            case 3:
+                                roomType.Amenities = AddAmenities(roomType.Amenities, title);
+                                break;
+                            case 4:
+                                if (roomType.Amenities.Count == 0)
+                                {
+                                    menuHelper.PrintAppName();
+                                    Console.WriteLine(title); 
+                                    Console.WriteLine("\tNo amenities to remove.");
+                                    Console.WriteLine("\n\tPress any key to continue...");
+                                    Console.ReadKey();
+                                    break;
+                                }
+                                List<string>? amenities = RemoveAmenities(roomType.Amenities, title);
+                                if (amenities != null)
+                                    roomType.Amenities = amenities;
+                                break;
+                            case 5:
+                                if (!Validator.NameValidate(roomType.Name, roomType.Id, roomType.HotelId, hotelRoomTypes))
+                                {
+                                    menuHelper.PrintAppName();
+                                    Console.WriteLine(title);
+                                    if (String.IsNullOrEmpty(roomType.Name))
+                                        Console.WriteLine("\tName cannot be empty!");
+                                    else
+                                        Console.WriteLine("\tName is used!");
+                                    Console.WriteLine("\n\tPress \"Esc\" for cancel or any other key to continue...");
+                                    ConsoleKeyInfo userInput = Console.ReadKey();
+                                    if (userInput.Key == ConsoleKey.Escape)
+                                    {
+                                        cancel = true;
+                                        running = false;
+                                        break;
+                                    }
+                                }
+                                running = false;
+                                break;
+                            case 6:
+                                cancel = true;
+                                running = false;
+                                break;
+                        }
+
+                        Console.CursorVisible = false;
+                        menuHelper.PrintAppName();
+                        Console.WriteLine(title);
+                        (menuParams.left, menuParams.top) = Console.GetCursorPosition();
                         break;
                 }
             }
 
-            Console.Clear();
-            Console.Write("\tEnter maximum occupancy: ");
-            int maximumOccupancy;
-            if (!int.TryParse(Console.ReadLine() ?? "0", out maximumOccupancy))
-                maximumOccupancy = 0;
+            if (cancel)
+                return false;
+            else
+            {
+                if (addNew)
+                    DataHelper.InsertHotelRoomTypes([roomType]);
+                else
+                {
+                    int index = roomTypes.FindIndex(r => r.Id == roomType.Id);
+                    if (index == -1)
+                        roomTypes.Add(roomType);
+                    else
+                        roomTypes[index] = roomType;
+                    DataHelper.UpdateHotelRoomTypes(roomTypes);
+                }
+            }
 
-            RoomType roomType = new RoomType(name, hotel.Id, amenities, maximumOccupancy);
-            DataHelper.InsertHotelRoomTypes([roomType]);
-
-            return roomType;
+            return true;
         }
 
-        public static RoomType? SelectRoomType(int hotelId)
+        private List<string> AddAmenities(List<string> amenities, string title)
         {
-            Hotel? hotel = HotelHelper.GetHotelById(hotelId);
-            if (hotel != null)
-                return SelectRoomType(hotel);
-            return null;
-        }
-
-        public static RoomType? SelectRoomType(Hotel hotel)
-        {
-            List<RoomType> roomTypes = GetRoomTypes([hotel.Id]);
-
-            if (roomTypes.Count == 0)
-                return null;
+            MenuHelper menuHelper = new MenuHelper();
 
             while (true)
             {
-                Console.Clear();
-                Console.WriteLine($"\t\tRoom types in hotel {hotel.Name}\n");
+                menuHelper.PrintAppName();
+                Console.WriteLine(title);
+                if (amenities.Count > 0)
+                    Console.WriteLine("\n\tCurrent amenities:\n");
+                foreach (string amenity in amenities)
+                    Console.WriteLine($"\t\t{amenity}");
+                
+                Console.Write("\n\tAdd amenity: ");
+                string newAmenity = Console.ReadLine() ?? string.Empty;
+                if (!string.IsNullOrEmpty(newAmenity) && !amenities.Contains(newAmenity.Trim()))
+                    amenities.Add(newAmenity.Trim());
 
-                int counter = 0;
-                foreach (RoomType rt in roomTypes)
-                    Console.WriteLine($"\t{++counter}. {rt.Name}");
-
-                Console.WriteLine($"\n\t{++counter}. Cancel");
-                Console.Write("\n\n\tChoose a room type: ");
-
-                int choice;
-                if (int.TryParse((Console.ReadLine() ?? "0"), out choice))
-                {
-                    if (choice > 0 && choice <= roomTypes.Count)
-                        return roomTypes[choice - 1];
-                    else if (choice == counter)
-                        break;
-                    else
-                    {
-                        Console.Clear();
-                        Console.WriteLine("\nInvalid option. Press any key to try again.");
-                        Console.ReadKey();
-                    }
-                }
+                Console.Write($"\n\tAdd more? (\"Y/n\"): ");
+                if ((Console.ReadLine() ?? "n").ToLower() != "y")
+                    break;
             }
 
-            return null;
+            return amenities;
         }
-
-        public static void EditRoomType(RoomType roomType)
+        
+        private List<string>? RemoveAmenities(List<string> amenities, string title)
         {
-            List<RoomType> roomTypes = GetRoomTypes();
+            Console.CursorVisible = false;
+            MenuHelper menuHelper = new MenuHelper(); 
+            menuHelper.PrintAppName();
+            Console.WriteLine(title);
+            
+            var menuParams = new MenuHelper.MenuParams();
+            (menuParams.left, menuParams.top) = Console.GetCursorPosition();
+            menuParams.choice = 0;
 
-            string name = roomType.Name;
-            List<string> amenities = roomType.Amenities;
-            int maximumOccupancy = roomType.MaximumOccupancy;
+            Dictionary<int, string[]> menu = new Dictionary<int, string[]>();
 
-            // Edit name
-            PrintRoomTypeEditHeader(roomType);
-            Console.Write("\tEdit name? (\"Y/n\"): ");
-            if ((Console.ReadLine() ?? "n").ToLower() == "y")
+            bool cancel = false;
+            bool running = true;
+            while (running)
             {
-                while (string.IsNullOrEmpty(name))
-                {
-                    PrintRoomTypeEditHeader(roomType);
-                    Console.WriteLine("\tCurrent name: \"{0}\"", roomType.Name);
-                    Console.Write("New name: ");
-                    name = Console.ReadLine() ?? string.Empty;
-                    if (string.IsNullOrEmpty(name))
-                    {
-                        PrintRoomTypeEditHeader(roomType);
-                        Console.WriteLine("\tName cannot be empty");
-                        Console.WriteLine("\n\tPress \"Esc\" for cancel or any other key to continue...");
-                        ConsoleKeyInfo userInput = Console.ReadKey();
-                        if (userInput.Key == ConsoleKey.Escape)
-                            return;
-                    }
-                }
-            }
+                Console.SetCursorPosition(menuParams.left, menuParams.top);
 
-            // TODO amenities
+                menu = menuHelper.GetAmenitiesMenu(amenities);
 
-            // Edit maximum occupancy
-            PrintRoomTypeEditHeader(roomType);
-            Console.Write("\tEdit maximum occupancy? (\"Y/n\"): ");
-            if ((Console.ReadLine() ?? "n").ToLower() == "y")
-            {
-                while (true)
+                menuHelper.PrintMenuElements(menu, menuParams, false);
+
+                menuParams.key = Console.ReadKey(false);
+
+                switch (menuParams.key.Key)
                 {
-                    PrintRoomTypeEditHeader(roomType);
-                    Console.WriteLine("\tCurrent price: \"{0}\"", roomType.MaximumOccupancy);
-                    Console.Write("\tNew price: ");
-                    if (int.TryParse(Console.ReadLine() ?? "0", out maximumOccupancy))
-                    {
-                        PrintRoomTypeEditHeader(roomType);
-                        if (maximumOccupancy == 0 || maximumOccupancy < 0)
+                    case ConsoleKey.UpArrow:
+                        menuParams.choice = menuParams.choice == 0 ? menu.Count - 1 : menuParams.choice - 1;
+                        continue;
+                    case ConsoleKey.DownArrow:
+                        menuParams.choice = menuParams.choice == menu.Count - 1 ? 0 : menuParams.choice + 1;
+                        continue;
+                    case ConsoleKey.Enter:
+                        if (menuParams.choice == menu.Count - 1)
                         {
-                            Console.Write("\tMaximum occupancy is \"{0}\". Continue? (\"Y/n\"): ", maximumOccupancy);
-                            if ((Console.ReadLine() ?? "n").ToLower() == "y")
-                                break;
-                            else
-                                continue;
+                            cancel = true;
+                            running = false;
                         }
-                        else if (maximumOccupancy > 0)
-                            break;
-                    }
-                }
-            }
-
-            if (roomType.Name == name && roomType.MaximumOccupancy == maximumOccupancy
-                && roomType.Amenities.Count == amenities.Count)
-            {
-                bool isEquals = true;
-                foreach (string amen in amenities)
-                {
-                    if (!roomType.Amenities.Contains(amen))
-                    {
-                        isEquals = false;
+                        if (menuParams.choice == menu.Count - 2)
+                            running = false;
+                        else if (menuParams.choice == menu.Count - 3)
+                        {
+                            amenities.Clear();
+                            menu.Clear();
+                            running = false;
+                        }
+                        else if (menuParams.choice >= 0 && menuParams.choice < amenities.Count) // Delete specific amenity
+                        {
+                            amenities.RemoveAt(menuParams.choice);
+                            menu.Remove(menuParams.choice);
+                        }
+                        else
+                            running = false;
+                        menuHelper.PrintAppName();
+                        Console.WriteLine(title);
+                        (menuParams.left, menuParams.top) = Console.GetCursorPosition();
                         break;
-                    }
                 }
 
-                if (isEquals)
-                {
-                    Console.WriteLine("\tThe room not changed.");
-                    Console.WriteLine("\tPress any key to continue...");
-                    Console.ReadKey();
-                    return;
-                }
             }
 
-            roomType.Name = name;
-            roomType.Amenities = amenities;
-            roomType.MaximumOccupancy = maximumOccupancy;
+            Console.CursorVisible = true;
 
-            int index = roomTypes.FindIndex(r => r.Id == roomType.Id && r.HotelId == roomType.HotelId);
-            if (index == -1)
-                roomTypes.Add(roomType);
-            else
-                roomTypes[index] = roomType;
+            if (cancel)
+                return null;
 
-            DataHelper.UpdateHotelRoomTypes(roomTypes);
-
+            return amenities;
         }
 
-        public static bool DeleteRoomType(RoomType roomType)
+        public bool DeleteRoomType(RoomType roomType)
         {
             List<RoomType> roomTypes = GetRoomTypes();
 
@@ -246,26 +387,15 @@ namespace HotelRoomReservationSystem.Helpers
                 return false;
             }
 
-            Console.Clear();
-            Console.Write($"\tDelete room \"{roomType.Name}\" and all data for the room? (\"Y/n\"): ");
+            (new MenuHelper()).PrintAppName();
+            Console.Write($"\tDelete room type \"{roomType.Name}\" and all data for the room? (\"Y/n\"): ");
             if ((Console.ReadLine() ?? "n").ToLower() != "y")
                 return false;
 
-            DataHelper.DeleteRoomTypeData(roomType.Id, roomType.HotelId);
-            roomTypes.RemoveAt(index);
-            DataHelper.UpdateHotelRoomTypes(roomTypes);
+            DataHelper.DeleteRoomTypeData(roomType.Id);
+            DataHelper.DeleteRoomTypes([roomType]);
 
             return false;
-        }
-
-        private static void PrintRoomTypeEditHeader(RoomType roomType)
-        {
-            Console.Clear();
-
-            // Print first row (Room)
-            Console.Write($"Edit room type: \"{roomType.Name}\"");
-
-            Console.WriteLine("\n\n");
         }
 
     }

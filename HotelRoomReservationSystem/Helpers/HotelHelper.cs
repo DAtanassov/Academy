@@ -4,27 +4,89 @@ namespace HotelRoomReservationSystem.Helpers
 {
     public class HotelHelper
     {
-        public static List<Hotel> GetHotels(int[]? hotelId = null)
-        {
-            List<Hotel>? hotels = DataHelper.GetHotelList();
+        public static List<Hotel> GetHotels()
+            => DataHelper.GetHotelList();
 
-            if (hotelId != null)
+        public static List<Hotel> GetHotels(int[] hotelId)
+        {
+            List<Hotel> hotels = GetHotels();
+
+            if (hotelId.Length > 0)
                 hotels = hotels.Where(h => hotelId.Contains(h.Id)).ToList();
 
             return hotels;
         }
-
-        public static Hotel? GetHotelById(int hotelId)
+        
+        public Hotel? GetHotelById(int hotelId)
         {
             List<Hotel> hotels = GetHotels([hotelId]);
-            if (hotels.Count == 0)
-                return null;
-            return hotels[0];
+            return GetHotelById(hotels, hotelId);
         }
 
-        public static void ShowAll()
+        public Hotel? GetHotelById(List<Hotel> hotels, int id)
         {
-            Console.Clear();
+            if (hotels.Count == 0)
+                return null;
+            return hotels.FirstOrDefault(h => h.Id == id);
+        }
+
+        public Hotel? SelectHotel(Hotel? hotel = null, User? user = null)
+        {
+            List<Hotel> hotels = GetHotels();
+
+            if (hotels.Count > 0 && user != null && !user.IsAdmin)
+                hotels = hotels.Where(h => h.ManagerId == user.Id).ToList();
+
+            if (hotels.Count == 0)
+                return hotel;
+            
+            Console.CursorVisible = false;
+            MenuHelper menuHelper = new MenuHelper();
+            menuHelper.PrintAppName();
+            Console.WriteLine("\t\tHotels\n");
+
+            var menuParams = new MenuHelper.MenuParams();
+            (menuParams.left, menuParams.top) = Console.GetCursorPosition();
+            menuParams.choice = 0;
+
+            Func<string[], string[]> hotelName = (string[] n) => n;
+            Dictionary<int, string[]> menu = hotels.Select((val, index) => new { Index = index, Value = val })
+                                                    .ToDictionary(h => h.Index, h => hotelName([h.Value.Name, h.Value.Id.ToString()]));
+            menu.Add(menu.Count, ["Cancel","0"]);
+
+            bool running = true;
+            while (running)
+            {
+                Console.SetCursorPosition(menuParams.left, menuParams.top);
+
+                menuHelper.PrintMenuElements(menu, menuParams, false);
+                
+                menuParams.key = Console.ReadKey(false);
+
+                switch (menuParams.key.Key)
+                {
+                    case ConsoleKey.UpArrow:
+                        menuParams.choice = menuParams.choice == 0 ? menu.Count - 1 : menuParams.choice - 1;
+                        continue;
+
+                    case ConsoleKey.DownArrow:
+                        menuParams.choice = menuParams.choice == menu.Count - 1 ? 0 : menuParams.choice + 1;
+                        continue;
+
+                    case ConsoleKey.Enter:
+                        if (menuParams.choice != menu.Count - 1)
+                            hotel = GetHotelById(hotels, int.Parse(menu[menuParams.choice][1]));
+                        running = false;
+                        break;
+                }
+            }
+
+            return hotel;
+        }
+
+        public void PrintHotels()
+        {
+            new MenuHelper().PrintAppName();
             Console.WriteLine("\t\tHotels\n");
 
             List<Hotel> hotels = GetHotels();
@@ -37,104 +99,127 @@ namespace HotelRoomReservationSystem.Helpers
             Console.ReadKey();
         }
 
-        public static Hotel? SelectHotel(Hotel? hotel = null)
+        public bool AddHotel() => AddEditHotel(new Hotel(), true);
+
+        public bool EditHotel(Hotel hotel) => AddEditHotel(hotel);
+
+        private bool AddEditHotel(Hotel hotel, bool addNew = false)
         {
+            User? user = null;
+
             List<Hotel> hotels = GetHotels();
 
-            if (hotels.Count == 0)
-                return hotel;
+            Console.CursorVisible = false;
+            MenuHelper menuHelper = new MenuHelper();
+            menuHelper.PrintAppName();
+            Console.WriteLine($"\t\t{(addNew ? "Creat" : "Edit")} Hotel\n");
 
-            while (true)
+            var menuParams = new MenuHelper.MenuParams();
+            (menuParams.left, menuParams.top) = Console.GetCursorPosition();
+            bool cancel = false;
+            bool running = true;
+            while (running)
             {
-                Console.Clear();
-                Console.WriteLine("\t\tHotels\n");
+                Console.SetCursorPosition(menuParams.left, menuParams.top);
 
-                int counter = 0;
-                foreach (Hotel h in hotels)
-                    Console.WriteLine($"\t{++counter}. {h.Name}");
+                if (hotel.ManagerId != 0)
+                    user = UserHelper.GetUser(hotel.ManagerId);
+                else
+                    user = null;
 
-                Console.WriteLine($"\n\t{++counter}. Cancel");
-                Console.Write("\n\n\tChoose a hotel: ");
+                Console.WriteLine($"\t{(menuParams.choice == 1 ? menuParams.prefix : "  ")}1. Name: {hotel.Name}\u001b[0m");
+                Console.WriteLine($"\t{(menuParams.choice == 2 ? menuParams.prefix : "  ")}2. Address: {hotel.Address} \u001b[0m");
+                Console.WriteLine($"\t{(menuParams.choice == 3 ? menuParams.prefix : "  ")}3. Menager: {(user == null ? "" : user.Name)} \u001b[0m");
+                Console.WriteLine($"\t{(menuParams.choice == 4 ? menuParams.prefix : "  ")}4. Save\u001b[0m");
+                Console.WriteLine($"\t{(menuParams.choice == 5 ? menuParams.prefix : "  ")}5. Cancel\u001b[0m");
 
-                int choice;
-                if (int.TryParse((Console.ReadLine() ?? "0"), out choice))
+                menuParams.key = Console.ReadKey(false);
+
+                switch (menuParams.key.Key)
                 {
-                    if (choice > 0 && choice <= hotels.Count)
-                        return hotels[choice - 1];
-                    else if (choice == counter)
-                        break;
-                    else
-                    {
-                        Console.Clear();
-                        Console.WriteLine("\nInvalid option. Press \"Esc\" for cancel or any other key to continue...");
-                        ConsoleKeyInfo userInput = Console.ReadKey();
-                        if (userInput.Key == ConsoleKey.Escape)
-                            break;
+                    case ConsoleKey.UpArrow:
+                        menuParams.choice = menuParams.choice == 1 ? 5 : menuParams.choice - 1;
+                        continue;
 
-                    }
+                    case ConsoleKey.DownArrow:
+                        menuParams.choice = menuParams.choice == 5 ? 1 : menuParams.choice + 1;
+                        continue;
+
+                    case ConsoleKey.Enter:
+
+                        Console.CursorVisible = true;
+
+                        switch (menuParams.choice)
+                        {
+                            case 1:
+                                menuHelper.PrintAppName();
+                                Console.WriteLine($"\t\t{(addNew ? "Creat" : "Edit")} Hotel\n");
+                                Console.Write("\tHotel name: ");
+                                hotel.Name = Console.ReadLine() ?? string.Empty;
+                                while (!Validator.NameValidate(hotel.Name, 0, hotels))
+                                {
+                                    if (string.IsNullOrEmpty(hotel.Name))
+                                        Console.WriteLine("\tName cannot be empty!");
+                                    else
+                                        Console.WriteLine("\tName is used!");
+                                    Console.Write("\tName: ");
+                                    hotel.Name = Console.ReadLine() ?? string.Empty;
+                                }
+                                break;
+                            case 2:
+                                menuHelper.PrintAppName();
+                                Console.WriteLine($"\t\t{(addNew ? "Creat" : "Edit")} Hotel\n"); 
+                                Console.Write("\tHotel address: ");
+                                hotel.Address = Console.ReadLine() ?? string.Empty;
+                                break;
+                            case 3:
+                                user = UserHelper.SelectUser(Program.user, user);
+                                if (user != null)
+                                    hotel.ManagerId = user.Id;
+                                break;
+                            case 4:
+                                if (string.IsNullOrWhiteSpace(hotel.Name))
+                                {
+                                    Console.WriteLine("\tHotel name cannot be empty. Press any key to continue...");
+                                    Console.ReadKey();
+                                    break;
+                                }
+                                running = false;
+                                break;
+                            case 5:
+                                cancel = true;
+                                running = false;
+                                break;
+
+                        }
+                        Console.CursorVisible = false;
+                        menuHelper.PrintAppName();
+                        Console.WriteLine($"\t\t{(addNew ? "Creat" : "Edit")} Hotel\n");
+                        (menuParams.left, menuParams.top) = Console.GetCursorPosition();
+                        break;
                 }
             }
 
-            return hotel;
-        }
-
-        public static Hotel? AddHotel()
-        {
-            List<Hotel> hotels = GetHotels();
-
-            Console.Clear();
-            Console.WriteLine("\t\tCreating Hotel\n");
-            Console.Write("\tHotel name: ");
-            string name = Console.ReadLine() ?? string.Empty;
-
-            if (string.IsNullOrEmpty(name))
-                return null;
-
-            Console.Clear();
-            Console.WriteLine("\t\tCreating Hotel\n");
-            Console.Write("\tHotel address: ");
-            string address = Console.ReadLine() ?? string.Empty;
-
-            Hotel hotel = new Hotel(name, address);
-            DataHelper.InsertHotels([hotel]);
-
-            return hotel;
-
-        }
-
-        public static Hotel ChangeName(Hotel hotel)
-        {
-            List<Hotel> hotels = GetHotels();
-
-            Console.Clear();
-            Console.WriteLine($"\t\tChanging name of hotel {hotel.Name}\n");
-            Console.Write("\tHotel name: ");
-            string name = Console.ReadLine() ?? string.Empty;
-
-            if (string.IsNullOrEmpty(name))
-            {
-                Console.WriteLine("\tName cannot be empty! Name not changed.");
-                return hotel;
-            }
-            if (hotel.Name == name)
-            {
-                return hotel;
-            }
-
-            hotel.Name = name;
-
-            int index = hotels.FindIndex(x => x.Id == hotel.Id);
-            if (index == -1)
-                hotels.Add(hotel);
+            if (cancel)
+                return false;
             else
-                hotels[index] = hotel;
-
-            DataHelper.UpdateHotels(hotels);
-
-            return hotel;
+            {
+                if (addNew)
+                    DataHelper.InsertHotels([hotel]);
+                else
+                {
+                    int index = hotels.FindIndex(r => r.Id == hotel.Id);
+                    if (index == -1)
+                        hotels.Add(hotel);
+                    else
+                        hotels[index] = hotel;
+                    DataHelper.UpdateHotels(hotels);
+                }
+            }
+            return true;
         }
 
-        public static bool DeleteHotel(Hotel hotel)
+        public bool DeleteHotel(Hotel hotel)
         {
             List<Hotel> hotels = GetHotels();
 
@@ -153,8 +238,7 @@ namespace HotelRoomReservationSystem.Helpers
                 return false;
 
             DataHelper.DeleteHotelData(hotel.Id);
-            hotels.RemoveAt(index);
-            DataHelper.UpdateHotels(hotels);
+            DataHelper.DeleteHotels([hotel]);
 
             return true;
         }
@@ -175,6 +259,6 @@ namespace HotelRoomReservationSystem.Helpers
 
             return hotels.Where(h => h.Id == hotelId).Count() > 0;
         }
-        
+
     }
 }

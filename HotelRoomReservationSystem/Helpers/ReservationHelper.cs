@@ -1,12 +1,11 @@
-﻿using HotelRoomReservationSystem.Models;
+﻿using System.Resources;
+using System.Runtime.InteropServices.ComTypes;
+using HotelRoomReservationSystem.Models;
 
 namespace HotelRoomReservationSystem.Helpers
 {
     public class ReservationHelper
     {
-        private static DataHelper dataHelper = new DataHelper();
-        private static HotelHelper hotelHelper = new HotelHelper();
-
         public List<Reservation> GetUserReservations(int[] userId, bool current = false, bool onlyActive = false)
         {
             List<Reservation> reservations = DataHelper.GetReservationList();
@@ -49,6 +48,13 @@ namespace HotelRoomReservationSystem.Helpers
             return reservations.Where(r => roomId.Contains(r.RoomId)).ToList();
         }
 
+        private Reservation? GetReservationById(List<Reservation> reservations, int id)
+        {
+            if (reservations.Count == 0)
+                return null;
+            return reservations.FirstOrDefault(r => r.Id == id);
+        }
+
         public static void CheckAndCancelExpiredReservations()
         {
             List<Reservation> reservations = DataHelper.GetReservationList();
@@ -61,13 +67,15 @@ namespace HotelRoomReservationSystem.Helpers
                 foreach (Reservation reservation in booked)
                 {
                     reservation.Status = RoomStatus.expired;
-                    int rIndex = reservations.FindIndex(r => r.Id == reservation.Id);
-                    reservations[rIndex] = reservation;
+                    int index = reservations.FindIndex(r => r.Id == reservation.Id);
+                    if (index == -1)
+                        reservations.Add(reservation);
+                    else
+                        reservations[index] = reservation;
                 }
             }
 
             DataHelper.UpdateReservations(reservations);
-
         }
 
         public List<Room> SearchForAvailableRooms(Hotel? hotel = null, 
@@ -113,22 +121,8 @@ namespace HotelRoomReservationSystem.Helpers
             Reservation reservation = new Reservation(user.Id, room, checkInDate, checkOutDate, RoomStatus.booked);
             DataHelper.InsertReservations([reservation]);
 
-            PrintReservationInfo(reservation);
+            Console.WriteLine(reservation.Info());
 
-        }
-
-        public static void PrintReservationInfo(Reservation reservation)
-        {
-            Hotel? hotel = HotelHelper.GetHotelById(reservation.HotelId);
-            Room? room = RoomHelper.GetRoomById(reservation.RoomId, reservation.HotelId);
-
-            Console.WriteLine($"\tReservation ID: {reservation.Id}");
-            Console.WriteLine($"\tHotel: {((hotel == null) ? "<not found>" : hotel.Name)}");
-            Console.WriteLine($"\tRoom: {((room == null) ? "" : room.ShortInfo())}");
-            Console.WriteLine($"\tCheck-in date: {reservation.CheckInDate.ToShortDateString()}");
-            Console.WriteLine($"\tCheck-out date: {reservation.CheckOutDate.ToShortDateString()}");
-            Console.WriteLine($"\tTotal price: {reservation.TotalPrice}");
-            Console.WriteLine($"\tStatus: {Enum.GetName(reservation.Status.GetType(), reservation.Status)}");
         }
 
         public void PrintReservations(List<User> users, bool current = false, bool onlyActive = false)
@@ -144,7 +138,7 @@ namespace HotelRoomReservationSystem.Helpers
             int[] hotelId = reservations.Select(r => r.HotelId).Distinct().ToArray();
 
             Dictionary<int, string> hotels = HotelHelper.GetHotels(hotelId).ToDictionary(h => h.Id, h => h.Name);
-            Dictionary<string, string> rooms = RoomHelper.GetRooms(hotelId).ToDictionary(r => r.GetId(), r => r.ShortInfo());
+            Dictionary<string, string> rooms = RoomHelper.GetRooms(hotelId).ToDictionary(r => r.Id.ToString(), r => r.ShortInfo());
 
             foreach (User user in users)
             {
@@ -185,7 +179,7 @@ namespace HotelRoomReservationSystem.Helpers
 
             hotelId = reservations.Select(r => r.HotelId).Distinct().ToArray();
 
-            Dictionary<string, string> rooms = RoomHelper.GetRooms(hotelId).ToDictionary(r => r.GetId(), r => r.ShortInfo());
+            Dictionary<int, string> rooms = RoomHelper.GetRooms(hotelId).ToDictionary(r => r.Id, r => r.ShortInfo());
 
             foreach (Hotel hotel in hotels)
             {
@@ -193,8 +187,8 @@ namespace HotelRoomReservationSystem.Helpers
                 List<Reservation> reservationByHotel = reservations.Where(r => r.HotelId == hotel.Id).OrderBy(r => r.RoomId).ToList();
                 foreach (Reservation reservation in reservationByHotel)
                 {
-                    string roomId = $"{reservation.RoomId}-{reservation.HotelId}";
-                    if (rooms.TryGetValue(roomId, out string? value))
+                    string roomId = reservation.RoomId.ToString();
+                    if (rooms.TryGetValue(reservation.RoomId, out string? value))
                         roomId = value;
 
                     Console.WriteLine($"\t\tRoom \"{roomId}\", " +
@@ -227,42 +221,52 @@ namespace HotelRoomReservationSystem.Helpers
                 return null;
             }
 
-            while (true)
+            Console.CursorVisible = false;
+            MenuHelper menuHelper = new MenuHelper();
+            menuHelper.PrintAppName();
+
+            if (hotel != null)
+                Console.WriteLine($"\t\tReservations in {hotel.Info()}\n");
+            else if (user != null)
+                Console.WriteLine($"\t\tReservations of user {user.Name}\n");
+
+
+            var menuParams = new MenuHelper.MenuParams();
+            (menuParams.left, menuParams.top) = Console.GetCursorPosition();
+            menuParams.choice = 0;
+
+            Func<string[], string[]> rName = (string[] n) => n;
+            Dictionary<int, string[]> menu = reservations.Select((val, index) => new { Index = index, Value = val })
+                                                    .ToDictionary(h => h.Index, h => rName([h.Value.Info(), h.Value.Id.ToString()]));
+            menu.Add(menu.Count, ["Cancel", "0"]);
+
+            bool running = true;
+            while (running)
             {
-                Console.Clear();
-                if (hotel != null)
-                    Console.WriteLine($"\t\tReservations in {hotel.Info()}\n");
-                else if (user != null)
-                    Console.WriteLine($"\t\tReservations of user {user.Name}\n");
+                Console.SetCursorPosition(menuParams.left, menuParams.top);
 
-                // TODO - status menu admin/user
-                int counter = 0;
-                foreach (Reservation r in reservations)
-                    Console.WriteLine($"\t{++counter}. {r.Info()}");
+                menuHelper.PrintMenuElements(menu, menuParams, false);
 
-                Console.WriteLine($"\n\t{++counter}. Cancel");
-                Console.Write("\n\n\tChoose a reservation: ");
+                menuParams.key = Console.ReadKey(false);
 
-                int choice;
-                Console.Write("\t");
-                if (int.TryParse((Console.ReadLine() ?? "0"), out choice))
+                switch (menuParams.key.Key)
                 {
-                    if (choice > 0 && choice <= reservations.Count)
-                        return reservations[choice - 1];
-                    else if (choice == counter)
+                    case ConsoleKey.UpArrow:
+                        menuParams.choice = menuParams.choice == 0 ? menu.Count - 1 : menuParams.choice - 1;
+                        continue;
+
+                    case ConsoleKey.DownArrow:
+                        menuParams.choice = menuParams.choice == menu.Count - 1 ? 0 : menuParams.choice + 1;
+                        continue;
+
+                    case ConsoleKey.Enter:
+                        if (menuParams.choice != menu.Count - 1)
+                            return GetReservationById(reservations, int.Parse(menu[menuParams.choice][1]));
+                        running = false;
                         break;
-                    else
-                    {
-                        Console.Clear();
-                        Console.WriteLine("\n\tInvalid option.Press \"Esc\" for cancel or any other key to try again.");
-                        ConsoleKeyInfo userInput = Console.ReadKey();
-                        if (userInput.Key == ConsoleKey.Escape)
-                            return null;
-
-                    }
                 }
-            }
 
+            }
             return null;
         }
 
@@ -271,74 +275,88 @@ namespace HotelRoomReservationSystem.Helpers
             List<Reservation> reservations = DataHelper.GetReservationList();
 
             int statusIndex;
-            RoomStatus? status = null;
-            
-            // Edit status
-            PrintReservationsManagmentHeader(admin, user, hotel, reservation);
-            Console.Write("\tChange Status? (\"Y/n\"): ");
-            if ((Console.ReadLine() ?? "n").ToLower() == "y")
+            var roomStatusType = typeof(RoomStatus);
+
+            Room? room = RoomHelper.GetRoomById(statusIndex = reservation.RoomId, reservation.HotelId);
+            User? resUser = UserHelper.GetUser(reservation.UserId);
+
+            Console.CursorVisible = false;
+            MenuHelper menuHelper = new MenuHelper();
+            EnumHelper enumHelper = new EnumHelper();
+            menuHelper.PrintReservationsManagmentHeader(user, hotel, reservation);
+            Console.WriteLine($"\t\tEdit reservation\n");
+
+            var menuParams = new MenuHelper.MenuParams();
+            (menuParams.left, menuParams.top) = Console.GetCursorPosition();
+            menuParams.choice = 8;
+            bool cancel = false;
+            bool running = true;
+
+            while (running)
             {
-                var roomStatusType = typeof(RoomStatus);
-                int[] roomStatusValues = (int[])roomStatusType.GetEnumValues();
+                Console.SetCursorPosition(menuParams.left, menuParams.top);
 
-                while (status == null)
+                Console.WriteLine($"\t{(menuParams.choice == 1 ? "• " : "  ")}1. ID:  {reservation.Id} \u001b[0m");
+                Console.WriteLine($"\t{(menuParams.choice == 2 ? "• " : "  ")}2. Hotel:  {(hotel == null ? "" : hotel.Name)} \u001b[0m");
+                Console.WriteLine($"\t{(menuParams.choice == 3 ? "• " : "  ")}3. Room:  {(room == null ? "" : room.ShortInfo())} \u001b[0m");
+                Console.WriteLine($"\t{(menuParams.choice == 4 ? "• " : "  ")}4. User:  {(resUser == null ? "" : resUser.Name)} \u001b[0m");
+                Console.WriteLine($"\t{(menuParams.choice == 5 ? "• " : "  ")}5. Check-in:  {reservation.CheckInDate.ToShortDateString()} \u001b[0m");
+                Console.WriteLine($"\t{(menuParams.choice == 6 ? "• " : "  ")}6. Check-out:  {reservation.CheckOutDate.ToShortDateString()} \u001b[0m");
+                Console.WriteLine($"\t{(menuParams.choice == 7 ? "• " : "  ")}7. Total prise:  {reservation.TotalPrice} \u001b[0m");
+                Console.WriteLine($"\t{(menuParams.choice == 8 ? menuParams.prefix : "  ")}8. Status:  {Enum.GetName(roomStatusType, reservation.Status)} \u001b[0m");
+                Console.WriteLine($"\t{(menuParams.choice == 9 ? menuParams.prefix : "  ")}9. Save\u001b[0m");
+                Console.WriteLine($"\t{(menuParams.choice == 10 ? menuParams.prefix : "  ")}10. Cancel\u001b[0m");
+
+                menuParams.key = Console.ReadKey(false);
+
+                switch (menuParams.key.Key)
                 {
-                    PrintReservationsManagmentHeader(admin, user, hotel, reservation);
-                    Console.WriteLine("\tCurrent status: \"{0}\"", Enum.GetName(roomStatusType, reservation.Status));
-                    
-                    int counter = 0;
-                    foreach (string s in Enum.GetNames(roomStatusType))
-                        Console.WriteLine($"\t{counter++}. {s}");
-                    Console.WriteLine($"\n\t{counter}. Cancel");
+                    case ConsoleKey.UpArrow:
+                        menuParams.choice = menuParams.choice == 8 ? 10 : menuParams.choice - 1;
+                        continue;
 
-                    Console.Write("\tChoise new status: ");
-                    if (!int.TryParse(Console.ReadLine() ?? "0", out statusIndex)
-                        || !(roomStatusValues.Contains(statusIndex) || statusIndex == counter))
-                    {
+                    case ConsoleKey.DownArrow:
+                        menuParams.choice = menuParams.choice == 10 ? 8 : menuParams.choice + 1;
+                        continue;
 
-                        PrintReservationsManagmentHeader(admin, user, hotel, reservation);
-                        Console.WriteLine("\tStatus not found");
-                        Console.WriteLine("\n\tPress \"Esc\" for cancel or any other key to continue...");
-                        ConsoleKeyInfo userInput = Console.ReadKey();
-                        if (userInput.Key == ConsoleKey.Escape)
-                            return false;
-                    }
-                    else
-                    {
-                        if (statusIndex == counter)
-                            status = reservation.Status;
-                        else
-                            status = (RoomStatus)statusIndex;
-                    }
+                    case ConsoleKey.Enter:
+                        
+                        switch (menuParams.choice)
+                        {
+                            case 8:
+                                menuHelper.PrintReservationsManagmentHeader(user, hotel, reservation);
+                                reservation.Status = EnumHelper.SelectStatus(reservation.Status);
+                                break;
+
+                            case 9:
+                                running = false;
+                                break;
+                            case 10:
+                                cancel = true;
+                                running = false;
+                                break;
+
+                        }
+
+                        menuHelper.PrintReservationsManagmentHeader(user, hotel, reservation);
+                        Console.WriteLine($"\t\tEdit reservation\n");
+                        (menuParams.left, menuParams.top) = Console.GetCursorPosition();
+                        break;
                 }
             }
-            else
-                status = reservation.Status;
 
-            // TODO
-            //Edit check-in and check-out dates
-            //Edit room
-            //Edit hotel
-            //Edit user
-
-            if ((reservation.Status == status))
-            {
-                PrintReservationsManagmentHeader(admin, user, hotel, reservation);
-                Console.WriteLine("\tThe reservation not changed.");
-                Console.WriteLine("\tPress any key to continue...");
-                Console.ReadKey();
+            if (cancel)
                 return false;
-            }
-
-            reservation.Status = (RoomStatus)status;
-
-            int index = reservations.FindIndex(r => r.Id == reservation.Id);
-            if (index == -1)
-                reservations.Add(reservation);
             else
-                reservations[index] = reservation;
+            {
+                int index = reservations.FindIndex(r => r.Id == reservation.Id);
+                if (index == -1)
+                    reservations.Add(reservation);
+                else
+                    reservations[index] = reservation;
 
-            DataHelper.UpdateReservations(reservations);
+                DataHelper.UpdateReservations(reservations);
+            }
 
             return true;
 
@@ -363,38 +381,9 @@ namespace HotelRoomReservationSystem.Helpers
             if ((Console.ReadLine() ?? "n").ToLower() != "y")
                 return false;
 
-            reservations.RemoveAt(index);
-            DataHelper.UpdateReservations(reservations);
+            DataHelper.DeleteReservations([reservation]);
             return true;
         }
 
-        public void PrintReservationsManagmentHeader(User? admin, User? user, Hotel? hotel, Reservation? reservation)
-        {
-            Console.Clear();
-
-            // Print first row
-            if (reservation == null && user == null && hotel == null)
-                Console.Write($"\t\t");
-            else
-                Console.Write($"Reservation\t\t");
-
-            if (admin == null)
-                Console.WriteLine($"\t\t0. Login");
-            else
-                Console.WriteLine($"\t\tUser: \"{admin.Name}\" (0. Logout)");
-
-            // Print second row
-            if (user != null)
-                Console.WriteLine($"\nFor user: \"{user.Name}\"");
-
-            // Print third row
-            if (reservation != null)
-                Console.WriteLine("\n{0}", reservation.Info());
-            else if (hotel != null)
-                Console.WriteLine("\n{0}", hotel.ShortInfo());
-
-
-            Console.WriteLine("\n\n");
-        }
     }
 }

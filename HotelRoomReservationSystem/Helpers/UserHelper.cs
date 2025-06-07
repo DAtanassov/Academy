@@ -1,12 +1,9 @@
 ﻿using HotelRoomReservationSystem.Models;
-using System.Net.Mail;
 
 namespace HotelRoomReservationSystem.Helpers
 {
     public class UserHelper
     {
-        private static DataHelper dataHelper = new DataHelper();
-
         public static bool isAdminRegistered()
         {
             List<User> users = DataHelper.GetUserList();
@@ -47,6 +44,18 @@ namespace HotelRoomReservationSystem.Helpers
             return user;
         }
 
+        public static User? GetUser(int id)
+        {
+            List<User> users = DataHelper.GetUserList();
+
+            users = users.Where(u => (u.Id == id)).ToList();
+
+            if (users.Count == 0)
+                return null;
+
+            return users[0];
+        }
+
         public static User? UserLogin()
         {
             Console.Clear();
@@ -60,20 +69,12 @@ namespace HotelRoomReservationSystem.Helpers
 
         }
 
-        private static void PrintAddUserHeader(string? additionalText)
-        {
-            Console.Clear();
-            Console.WriteLine("\t\tAdd user\n\n");
-            if (!string.IsNullOrEmpty(additionalText))
-                Console.Write(additionalText);
-        }
-
         private static string GetEmailAddress()
         {
             string email = (Console.ReadLine() ?? string.Empty).Trim();
-            while (!ValidateEmailAddress(email))
+            while (!Validator.EmailValidate(email))
             {
-                PrintAddUserHeader(null);
+                new MenuHelper().PrintAddUserHeader();
                 Console.WriteLine("\tEmail address is not valid!");
                 Console.Write("\tEnter email address: ");
                 email = (Console.ReadLine() ?? string.Empty).Trim();
@@ -83,24 +84,26 @@ namespace HotelRoomReservationSystem.Helpers
 
         public static User AddUser(bool userIsAdmin)
         {
+            MenuHelper menuHelper = new MenuHelper();
+
             List<User> users = DataHelper.GetUserList();
 
-            PrintAddUserHeader("\tName: ");
+            menuHelper.PrintAddUserHeader("\tName: ");
             string name = Console.ReadLine() ?? string.Empty;
             while (string.IsNullOrEmpty(name))
             {
-                PrintAddUserHeader(null);
+                menuHelper.PrintAddUserHeader();
                 Console.WriteLine("\tName cannot be empty!");
                 Console.Write("\tName: ");
                 name = Console.ReadLine() ?? string.Empty;
             }
 
 
-            PrintAddUserHeader("\tEmail address: ");
+            menuHelper.PrintAddUserHeader("\tEmail address: ");
             string email = GetEmailAddress();
             while (users.Where(u => (u.Email == email.ToLower())).ToList().Count > 0)
             {
-                PrintAddUserHeader(null);
+                menuHelper.PrintAddUserHeader();
                 Console.WriteLine("\tThis email address is registered!");
                 Console.Write("\tEnter email address: ");
                 email = GetEmailAddress();
@@ -109,31 +112,31 @@ namespace HotelRoomReservationSystem.Helpers
             string username = "";
             if (!string.IsNullOrEmpty(email))
             {
-                PrintAddUserHeader("\tUse email as username? (\"Y/n\"): ");
+                menuHelper.PrintAddUserHeader("\tUse email as username? (\"Y/n\"): ");
                 if ((Console.ReadLine() ?? "n").ToLower() == "y")
                     username = email.ToLower();
             }
 
             if (string.IsNullOrEmpty(username))
             {
-                PrintAddUserHeader("\tUsername: ");
+                menuHelper.PrintAddUserHeader("\tUsername: ");
                 username = (Console.ReadLine() ?? string.Empty).Trim();
             }
             while (users.Where(u => (u.Username == username)).ToList().Count > 0)
             {
-                PrintAddUserHeader(null);
+                menuHelper.PrintAddUserHeader();
                 Console.WriteLine("\tUsername is used!");
                 Console.Write("\tEnter new username: ");
                 username = (Console.ReadLine() ?? string.Empty).Trim();
             }
 
-            PrintAddUserHeader("\tPassword: ");
+            menuHelper.PrintAddUserHeader("\tPassword: ");
             string password = Console.ReadLine() ?? "1234";
 
             User user = new User(name, email, username, password, userIsAdmin);
             DataHelper.InsertUsers([user]);
 
-            PrintAddUserHeader("\tCreated user:\n");
+            menuHelper.PrintAddUserHeader("\tCreated user:\n");
             Console.WriteLine($"{user.Info()}");
             Console.WriteLine("\n\tPress any key to continue...");
             Console.ReadKey();
@@ -144,7 +147,7 @@ namespace HotelRoomReservationSystem.Helpers
 
         public static bool EditUser(User admin, User user)
         {
-            if (!(admin == user || admin.IsAdmin))
+            if (!(admin.CompareTo(user) == 0 || admin.IsAdmin))
                 return false;
 
             List<User> users = DataHelper.GetUserList();
@@ -406,7 +409,7 @@ namespace HotelRoomReservationSystem.Helpers
 
         }
 
-        public static void ShowAll(User? admin = null)
+        public static void PrintUsers(User? admin = null)
         {
             Console.Clear();
             Console.WriteLine("\t\tUsers\n");
@@ -493,19 +496,6 @@ namespace HotelRoomReservationSystem.Helpers
                 Console.Write($"\nReservation: \"{reservation.Id.ToString()}\"");
 
             Console.WriteLine("\n\n");
-        }
-
-        private static bool ValidateEmailAddress(string email)
-        {
-            try
-            {
-                MailAddress m = new MailAddress(email);
-                return true;
-            }
-            catch (Exception)
-            {
-                return false;
-            }
         }
 
         // TODO - Encrypt, Decript password

@@ -2,10 +2,12 @@
 
 namespace HotelRoomReservationSystem.Models
 {
-    public class Reservation : RoomModel
+    public class Reservation : BaseModel
     {
-        public int UserId { get; set; }
+        public int HotelId { get; set; }
+        public int RoomTypeId { get; set; }
         public int RoomId { get; set; }
+        public int UserId { get; set; }
         public DateTime CheckInDate { get; set; }
         public DateTime CheckOutDate { get; set; }
         public decimal TotalPrice { get; set; }
@@ -41,20 +43,20 @@ namespace HotelRoomReservationSystem.Models
 
         public override string Info()
         {
-            Hotel? hotel = HotelHelper.GetHotelById(HotelId);
+            Hotel? hotel = (new HotelHelper()).GetHotelById(HotelId);
             Room? room = RoomHelper.GetRoomById(RoomId, HotelId);
 
-            return $"Reservation ID: {GetId()}, " +
+            return $"Reservation ID: {Id}, " +
                    ((hotel == null) ? "" : $"Hotel ID: {hotel.ShortInfo()}, ") +
                    ((room == null) ? "" : $"Room ID: {room.ShortInfo()}, ") +
                    $"Check-in: {CheckInDate.ToShortDateString()}, " +
                    $"Check-out: {CheckOutDate.ToShortDateString()}, " +
+                   $"Total price: {TotalPrice}," +
                    $"Status: {Enum.GetName(Status.GetType(), Status)}";
         }
 
         public override string ShortInfo()
-            => $"Reserv. ID: {Id}-{HotelId}, status: {Enum.GetName(Status.GetType(), Status)}";
+            => $"Reserv. ID: {Id}, status: {Enum.GetName(Status.GetType(), Status)}";
 
-        public override string GetId() => $"{Id}-{HotelId}";
     }
 }

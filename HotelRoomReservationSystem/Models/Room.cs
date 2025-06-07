@@ -2,8 +2,10 @@
 
 namespace HotelRoomReservationSystem.Models
 {
-    public class Room : RoomModel
+    public class Room : BaseModel
     {
+        public int HotelId { get; set; }
+        public int RoomTypeId { get; set; }
         public int Number { get; set; }
         public decimal PricePerNight { get; set; }
         public decimal CancellationFee { get; set; }
@@ -40,17 +42,12 @@ namespace HotelRoomReservationSystem.Models
 
         public override string Info() 
         {
-            // TODO - add more room type and Hotel info
-
             RoomType? roomType = RoomTypeHelper.GetRoomTypeById(RoomTypeId, HotelId);
 
             return $"\t\tNumber: {Number},\n" +
                     ((roomType == null) ? "" : $"\t\ttype: {roomType.Name},\n") +
                     $"\t\tprice per night: {PricePerNight},\n" +
                     $"\t\tcancellation fee: {CancellationFee},\n";
-                    //$"\t\tstatus {status}";
         }
-        
-        public override string GetId() => $"{Id}-{HotelId}";
     }
 }

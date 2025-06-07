@@ -1,14 +1,15 @@
-﻿using System.Text.Json;
+﻿using System.Data.Common;
+using System.Text.Json;
 using HotelRoomReservationSystem.Models;
 
 namespace HotelRoomReservationSystem.Helpers
 {
     public class DataHelper : IDataHelper
     {
+        protected readonly static string dbDirPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Data") + Path.DirectorySeparatorChar;
+
         public static void CreateDataBase()
         {
-
-            string dbDirPath = AppDomain.CurrentDomain.BaseDirectory + "/Data/";
             if (!Directory.Exists(dbDirPath))
             {
                 try
@@ -29,145 +30,90 @@ namespace HotelRoomReservationSystem.Helpers
                         file.Close();
                     }
                     catch (Exception)
-                    { throw new ApplicationException($"Can't create database {dbFilePaths}"); }
+                    { throw new ApplicationException($"Can't create file {dbFilePath + ".json"}"); }
                 }
             }
 
         }
 
-        public static List<User> GetUserList()
+        public static List<T> GetList<T>(string dbPath)
         {
-            string fileContent = GetFileContent("Users.json");
+            string fileContent = GetFileContent(dbPath);
 
-            List<User>? users = new List<User>();
+            List<T>? list = new List<T>();
 
             if (!String.IsNullOrEmpty(fileContent))
-                users = JsonSerializer.Deserialize<List<User>>(fileContent);
+                list = JsonSerializer.Deserialize<List<T>>(fileContent);
 
-            if (users == null)
-                return new List<User>();
+            if (list == null)
+                return new List<T>();
 
-            return users;
+            return list;
         }
+
+        public static void Insert<T>(List<T> list, string dbPath)
+        {
+            List<T> allT = GetList<T>(dbPath);
+            foreach (T item in list)
+            {
+                (item as BaseModel).Id = GetMaxId(allT);
+                    allT.Add(item);
+            }
+            Update<T>(allT, dbPath);
+        }
+
+        public static void Update<T>(List<T> list, string dbPath)
+        {
+            string fileContent = JsonSerializer.Serialize(list);
+            WriteUpdateFile(dbPath, fileContent);
+
+        }
+
+        public static void Delete<T>(List<T> list, string dbPath)
+        {
+            List<T> allT = GetList<T>(dbPath);
+
+            foreach (T item in list)
+            {
+                int index = allT.FindIndex(u => (u as BaseModel).Id == (item as BaseModel).Id);
+                if (index == -1)
+                    continue;
+
+                allT.RemoveAt(index);
+            }
+            Update(allT, dbPath);
+        }
+
+        public static List<User> GetUserList()
+            => GetList<User>("Users.json");
 
         public static List<Hotel> GetHotelList()
-        {
-            string fileContent = GetFileContent("Hotels.json");
-
-            List<Hotel>? hotels = new List<Hotel>();
-
-            if (!String.IsNullOrEmpty(fileContent))
-                hotels = JsonSerializer.Deserialize<List<Hotel>>(fileContent);
-
-            if (hotels == null)
-                return new List<Hotel>();
-
-            return hotels;
-        }
+            => GetList<Hotel>("Hotels.json");
 
         public static List<RoomType> GetRoomTypeList()
-        {
-            string fileContent = GetFileContent("RoomTypes.json");
-
-            List<RoomType>? roomTypes = new List<RoomType>();
-
-            if (!String.IsNullOrEmpty(fileContent))
-                roomTypes = JsonSerializer.Deserialize<List<RoomType>>(fileContent);
-
-            if (roomTypes == null)
-                return new List<RoomType>();
-
-            return roomTypes;
-        }
+            => GetList<RoomType>("RoomTypes.json");
 
         public static List<Room> GetRoomList()
-        {
-            string fileContent = GetFileContent("Rooms.json");
-
-            List<Room>? rooms = new List<Room>();
-
-            if (!String.IsNullOrEmpty(fileContent))
-                rooms = JsonSerializer.Deserialize<List<Room>>(fileContent);
-
-            if (rooms == null)
-                return new List<Room>();
-
-            return rooms;
-        }
+            => GetList<Room>("Rooms.json");
 
         public static List<Reservation> GetReservationList()
-        {
-            string fileContent = GetFileContent("Reservations.json");
-
-            List<Reservation>? reservations = new List<Reservation>();
-
-            if (!String.IsNullOrEmpty(fileContent))
-                reservations = JsonSerializer.Deserialize<List<Reservation>>(fileContent);
-
-            if (reservations == null)
-                return new List<Reservation>();
-
-            return reservations;
-        }
-
+            => GetList<Reservation>("Reservations.json");
 
         public static void InsertUsers(List<User> users)
-        {
-            List<User> allUsers = GetUserList();
-            foreach (User user in users)
-            {
-                user.Id = GetMaxId(allUsers);
-                allUsers.Add(user);
-            }
-            UpdateUsers(allUsers);
-        }
-
+            => Insert(users, "Users.json");
+        
         public static void InsertHotels(List<Hotel> hotels)
-        {
-            List<Hotel> allHotels = GetHotelList();
-            foreach (Hotel hotel in hotels)
-            {
-                hotel.Id = GetMaxId(allHotels);
-                allHotels.Add(hotel);
-            }
-            UpdateHotels(allHotels);
-        }
+            => Insert(hotels, "Hotels.json");
 
         public static void InsertHotelRoomTypes(List<RoomType> roomTypes)
-        {
-            List<RoomType> allRoomTypes = GetRoomTypeList();
-            foreach (RoomType roomType in roomTypes)
-            {
-                roomType.Id = GetMaxId(allRoomTypes, roomType.HotelId);
-                allRoomTypes.Add(roomType);
-            }
-            UpdateHotelRoomTypes(allRoomTypes);
-            
-        }
+            => Insert(roomTypes, "RoomTypes.json");
 
         public static void InsertHotelRooms(List<Room> rooms)
-        {
-            List<Room> allRooms = GetRoomList();
-            foreach (Room room in rooms)
-            {
-                room.Id = GetMaxId(allRooms, room.HotelId);
-                allRooms.Add(room);
-            }
-            UpdateHotelRooms(allRooms);
-        }
+            => Insert(rooms, "Rooms.json");
 
         public static void InsertReservations(List<Reservation> reservations)
-        {
-            List<Reservation> allReservation = GetReservationList();
-            foreach (Reservation reservation in reservations)
-            {
-                reservation.Id = GetMaxId(allReservation, reservation.HotelId);
-                allReservation.Add(reservation);
-            }
-            UpdateReservations(allReservation);
-        }
-
-
+            => Insert(reservations, "Reservations.json");
+        
         public static void UpdateUsers(List<User> users)
         {
             string fileContent = JsonSerializer.Serialize(users);
@@ -176,31 +122,28 @@ namespace HotelRoomReservationSystem.Helpers
         }
 
         public static void UpdateHotels(List<Hotel> hotels)
-        {
-            string fileContent = JsonSerializer.Serialize(hotels);
-            WriteUpdateFile("Hotels.json", fileContent);
-
-        }
+            => Update(hotels, "Hotels.json");
 
         public static void UpdateHotelRoomTypes(List<RoomType> roomTypes)
-        {
-            string fileContent = JsonSerializer.Serialize(roomTypes);
-            WriteUpdateFile("RoomTypes.json", fileContent);
-        }
+            => Update(roomTypes, "RoomTypes.json");
         
         public static void UpdateHotelRooms(List<Room> rooms)
-        {
-            string fileContent = JsonSerializer.Serialize(rooms);
-            WriteUpdateFile("Rooms.json", fileContent);
-        }
+            => Update(rooms, "Rooms.json");
 
         public static void UpdateReservations(List<Reservation> reservations)
-        {
-            string fileContent = JsonSerializer.Serialize(reservations);
-            WriteUpdateFile("Reservations.json", fileContent);
+            => Update(reservations, "Reservations.json");
 
-        }
+        public static void DeleteHotels(List<Hotel> hotels)
+            => Delete(hotels, "Hotels.json");
 
+        public static void DeleteRooms(List<Room> rooms)
+            => Delete(rooms, "Rooms.json");
+
+        public static void DeleteRoomTypes(List<RoomType> roomTypes)
+            => Delete(roomTypes, "RoomTypes.json");
+
+        public static void DeleteReservations(List<Reservation> reservations)
+            => Delete(reservations, "Reservations.json");
 
         public static void DeleteHotelData(int hotelId)
         {
@@ -246,7 +189,7 @@ namespace HotelRoomReservationSystem.Helpers
 
         }
 
-        public static void DeleteRoomData(int roomId, int hotelId)
+        public static void DeleteRoomData(int roomId)
         {
             string fileContent = GetFileContent("Reservations.json");
 
@@ -257,14 +200,13 @@ namespace HotelRoomReservationSystem.Helpers
 
             if (reservations != null && reservations.Count > 0)
             {
-                reservations = reservations.Where(x => !(x.RoomId == roomId && x.HotelId == hotelId)).ToList();
+                reservations = reservations.Where(x => !(x.RoomId == roomId)).ToList();
                 UpdateReservations(reservations);
             }
         }
 
-        public static void DeleteRoomTypeData(int roomTypeId, int hotelId)
+        public static void DeleteRoomTypeData(int roomTypeId)
         {
-
             string fileContent = GetFileContent("Rooms.json");
 
             List<Room>? rooms = new List<Room>();
@@ -274,7 +216,7 @@ namespace HotelRoomReservationSystem.Helpers
 
             if (rooms != null && rooms.Count > 0)
             {
-                rooms = rooms.Where(x => !(x.RoomTypeId == roomTypeId && x.HotelId == hotelId)).ToList();
+                rooms = rooms.Where(x => !(x.RoomTypeId == roomTypeId)).ToList();
                 UpdateHotelRooms(rooms);
             }
 
@@ -287,73 +229,22 @@ namespace HotelRoomReservationSystem.Helpers
 
             if (reservations != null && reservations.Count > 0)
             {
-                reservations = reservations.Where(x => !(x.RoomTypeId == roomTypeId && x.HotelId == hotelId)).ToList();
+                reservations = reservations.Where(x => !(x.RoomTypeId == roomTypeId)).ToList();
                 UpdateReservations(reservations);
             }
         }
 
-
-        private static int GetMaxId(List<User> list)
+        public static int GetMaxId<T>(List<T> list)
         {
             if (list.Count == 0)
                 return 1;
 
-            int maxId = list.Max(x => x.Id);
+            int maxId = list.Max(x => (x as BaseModel).Id);
             return ++maxId;
         }
-
-        private static int GetMaxId(List<Hotel> list)
-        {
-            if (list.Count == 0)
-                return 1;
-
-            int maxId = list.Max(x => x.Id);
-            return ++maxId;
-        }
-
-        private static int GetMaxId(List<RoomType> list, int hotelId)
-        {
-            if (list.Count == 0)
-                return 1;
-
-            list = list.Where(r => r.HotelId == hotelId).ToList();
-            if (list.Count == 0)
-                return 1;
-
-            int maxId = list.Max(x => x.Id);
-            return ++maxId;
-        }
-
-        private static int GetMaxId(List<Room> list, int hotelId)
-        {
-            if (list.Count == 0)
-                return 1;
-
-            list = list.Where(r => r.HotelId == hotelId).ToList();
-            if (list.Count == 0)
-                return 1;
-
-            int maxId = list.Max(x => x.Id);
-            return ++maxId;
-        }
-
-        private static int GetMaxId(List<Reservation> list, int hotelId)
-        {
-            if (list.Count == 0)
-                return 1;
-
-            list = list.Where(r => r.HotelId == hotelId).ToList();
-            if (list.Count == 0)
-                return 1;
-
-            int maxId = list.Max(x => x.Id);
-            return ++maxId;
-        }
-
 
         public static string GetFileContent(string path)
         {
-            string dbDirPath = AppDomain.CurrentDomain.BaseDirectory + "/Data/";
             string dbPath = dbDirPath + path;
 
             if (!Directory.Exists(dbDirPath))
@@ -388,7 +279,6 @@ namespace HotelRoomReservationSystem.Helpers
 
         public static void WriteUpdateFile(string path, string fileContent)
         {
-            string dbDirPath = AppDomain.CurrentDomain.BaseDirectory + "/Data/";
             string dbPath = dbDirPath + path;
 
             if (!Directory.Exists(dbDirPath))
