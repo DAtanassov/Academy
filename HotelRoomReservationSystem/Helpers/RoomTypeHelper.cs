@@ -45,13 +45,17 @@ namespace HotelRoomReservationSystem.Helpers
             Console.WriteLine("\t\tHotel\n");
 
             var menuParams = new MenuHelper.MenuParams();
-            (menuParams.left, menuParams.top) = Console.GetCursorPosition();
-            menuParams.choice = 0;
+            (menuParams.left, menuParams.top) = Console.GetCursorPosition(); 
 
             Func<string[], string[]> rName = (string[] n) => n;
             Dictionary<int, string[]> menu = roomTypes.Select((val, index) => new { Index = index, Value = val })
                                                     .ToDictionary(r => r.Index, r => rName([r.Value.ShortInfo(), r.Value.Id.ToString()]));
             menu.Add(menu.Count, ["Cancel", "0"]);
+            for (int i = menu.Count; i > 0; i--)
+            {
+                menu.Add(i, menu[i - 1]);
+                menu.Remove(i - 1);
+            }
 
             bool running = true;
             while (running)
@@ -65,15 +69,15 @@ namespace HotelRoomReservationSystem.Helpers
                 switch (menuParams.key.Key)
                 {
                     case ConsoleKey.UpArrow:
-                        menuParams.choice = menuParams.choice == 0 ? menu.Count - 1 : menuParams.choice - 1;
+                        menuParams.choice = menuParams.choice == 1 ? menu.Count : menuParams.choice - 1;
                         continue;
 
                     case ConsoleKey.DownArrow:
-                        menuParams.choice = menuParams.choice == menu.Count - 1 ? 0 : menuParams.choice + 1;
+                        menuParams.choice = menuParams.choice == menu.Count ? 1 : menuParams.choice + 1;
                         continue;
 
                     case ConsoleKey.Enter:
-                        if (menuParams.choice != menu.Count - 1)
+                        if (menuParams.choice != menu.Count)
                             roomType = GetRoomTypeById(roomTypes, int.Parse(menu[menuParams.choice][1]));
                         running = false;
                         break;
@@ -335,29 +339,29 @@ namespace HotelRoomReservationSystem.Helpers
                 switch (menuParams.key.Key)
                 {
                     case ConsoleKey.UpArrow:
-                        menuParams.choice = menuParams.choice == 0 ? menu.Count - 1 : menuParams.choice - 1;
+                        menuParams.choice = menuParams.choice == 1 ? menu.Count : menuParams.choice - 1;
                         continue;
                     case ConsoleKey.DownArrow:
-                        menuParams.choice = menuParams.choice == menu.Count - 1 ? 0 : menuParams.choice + 1;
+                        menuParams.choice = menuParams.choice == menu.Count ? 1 : menuParams.choice + 1;
                         continue;
                     case ConsoleKey.Enter:
-                        if (menuParams.choice == menu.Count - 1)
+                        if (menuParams.choice == menu.Count)
                         {
                             cancel = true;
                             running = false;
                         }
-                        if (menuParams.choice == menu.Count - 2)
+                        if (menuParams.choice == menu.Count - 1)
                             running = false;
-                        else if (menuParams.choice == menu.Count - 3)
+                        else if (menuParams.choice == menu.Count - 2)
                         {
                             amenities.Clear();
                             menu.Clear();
                             running = false;
                         }
-                        else if (menuParams.choice >= 0 && menuParams.choice < amenities.Count) // Delete specific amenity
+                        else if (menuParams.choice >= 1 && menuParams.choice < amenities.Count - 1) // Delete specific amenity
                         {
-                            amenities.RemoveAt(menuParams.choice);
-                            menu.Remove(menuParams.choice);
+                            amenities.RemoveAt(menuParams.choice - 1);
+                            menu.Remove(menuParams.choice - 1);
                         }
                         else
                             running = false;

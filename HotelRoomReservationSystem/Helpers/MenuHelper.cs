@@ -315,12 +315,32 @@ namespace HotelRoomReservationSystem.Helpers
             Dictionary<int, string[]> menu = new Dictionary<int, string[]>();
 
             foreach (string amenity in amenities)
-                menu.Add(menu.Count, [amenity]);
-            menu.Add(menu.Count, ["Delete all amenities"]);
-            menu.Add(menu.Count, ["Save"]);
-            menu.Add(menu.Count, ["Cancel"]);
+                menu.Add(menu.Count + 1, [amenity]);
+            menu.Add(menu.Count + 1, ["Delete all amenities"]);
+            menu.Add(menu.Count + 1, ["Save"]);
+            menu.Add(menu.Count + 1, ["Cancel"]);
 
             return menu;
         }
+
+        public void PrintUserManagmentHeader(User? user, Reservation? reservation, bool printName = true)
+        {
+            if (printName)
+                PrintAppName();
+
+            // Print first row (User)
+            if (reservation == null && user == null)
+                Console.Write($"Edit:");
+
+            // Print second row
+            if (user != null)
+                Console.Write($"\nUser: \"{user.Name}\"");
+            if (reservation != null)
+                Console.Write($"\nReservation: \"{reservation.Id.ToString()}\"");
+
+            if (reservation == null && user == null) 
+                Console.WriteLine("\n");
+        }
+
     }
 }

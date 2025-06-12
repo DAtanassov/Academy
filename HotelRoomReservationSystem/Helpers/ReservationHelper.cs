@@ -1,6 +1,4 @@
-﻿using System.Resources;
-using System.Runtime.InteropServices.ComTypes;
-using HotelRoomReservationSystem.Models;
+﻿using HotelRoomReservationSystem.Models;
 
 namespace HotelRoomReservationSystem.Helpers
 {
@@ -233,12 +231,16 @@ namespace HotelRoomReservationSystem.Helpers
 
             var menuParams = new MenuHelper.MenuParams();
             (menuParams.left, menuParams.top) = Console.GetCursorPosition();
-            menuParams.choice = 0;
 
             Func<string[], string[]> rName = (string[] n) => n;
             Dictionary<int, string[]> menu = reservations.Select((val, index) => new { Index = index, Value = val })
                                                     .ToDictionary(h => h.Index, h => rName([h.Value.Info(), h.Value.Id.ToString()]));
             menu.Add(menu.Count, ["Cancel", "0"]);
+            for (int i = menu.Count; i > 0; i--)
+            {
+                menu.Add(i, menu[i - 1]);
+                menu.Remove(i - 1);
+            }
 
             bool running = true;
             while (running)
@@ -252,15 +254,15 @@ namespace HotelRoomReservationSystem.Helpers
                 switch (menuParams.key.Key)
                 {
                     case ConsoleKey.UpArrow:
-                        menuParams.choice = menuParams.choice == 0 ? menu.Count - 1 : menuParams.choice - 1;
+                        menuParams.choice = menuParams.choice == 1 ? menu.Count : menuParams.choice - 1;
                         continue;
 
                     case ConsoleKey.DownArrow:
-                        menuParams.choice = menuParams.choice == menu.Count - 1 ? 0 : menuParams.choice + 1;
+                        menuParams.choice = menuParams.choice == menu.Count ? 1 : menuParams.choice + 1;
                         continue;
 
                     case ConsoleKey.Enter:
-                        if (menuParams.choice != menu.Count - 1)
+                        if (menuParams.choice != menu.Count)
                             return GetReservationById(reservations, int.Parse(menu[menuParams.choice][1]));
                         running = false;
                         break;
@@ -278,7 +280,7 @@ namespace HotelRoomReservationSystem.Helpers
             var roomStatusType = typeof(RoomStatus);
 
             Room? room = RoomHelper.GetRoomById(statusIndex = reservation.RoomId, reservation.HotelId);
-            User? resUser = UserHelper.GetUser(reservation.UserId);
+            User? resUser = (new UserHelper()).GetUserById(reservation.UserId);
 
             Console.CursorVisible = false;
             MenuHelper menuHelper = new MenuHelper();

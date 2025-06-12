@@ -47,12 +47,16 @@ namespace HotelRoomReservationSystem.Helpers
 
             var menuParams = new MenuHelper.MenuParams();
             (menuParams.left, menuParams.top) = Console.GetCursorPosition();
-            menuParams.choice = 0;
 
             Func<string[], string[]> hotelName = (string[] n) => n;
             Dictionary<int, string[]> menu = hotels.Select((val, index) => new { Index = index, Value = val })
                                                     .ToDictionary(h => h.Index, h => hotelName([h.Value.Name, h.Value.Id.ToString()]));
             menu.Add(menu.Count, ["Cancel","0"]);
+            for (int i = menu.Count; i > 0; i--)
+            {
+                menu.Add(i, menu[i - 1]);
+                menu.Remove(i - 1);
+            }
 
             bool running = true;
             while (running)
@@ -66,15 +70,15 @@ namespace HotelRoomReservationSystem.Helpers
                 switch (menuParams.key.Key)
                 {
                     case ConsoleKey.UpArrow:
-                        menuParams.choice = menuParams.choice == 0 ? menu.Count - 1 : menuParams.choice - 1;
+                        menuParams.choice = menuParams.choice == 1 ? menu.Count : menuParams.choice - 1;
                         continue;
 
                     case ConsoleKey.DownArrow:
-                        menuParams.choice = menuParams.choice == menu.Count - 1 ? 0 : menuParams.choice + 1;
+                        menuParams.choice = menuParams.choice == menu.Count ? 1 : menuParams.choice + 1;
                         continue;
 
                     case ConsoleKey.Enter:
-                        if (menuParams.choice != menu.Count - 1)
+                        if (menuParams.choice != menu.Count)
                             hotel = GetHotelById(hotels, int.Parse(menu[menuParams.choice][1]));
                         running = false;
                         break;
@@ -86,7 +90,7 @@ namespace HotelRoomReservationSystem.Helpers
 
         public void PrintHotels()
         {
-            new MenuHelper().PrintAppName();
+            (new MenuHelper()).PrintAppName();
             Console.WriteLine("\t\tHotels\n");
 
             List<Hotel> hotels = GetHotels();
@@ -111,8 +115,11 @@ namespace HotelRoomReservationSystem.Helpers
 
             Console.CursorVisible = false;
             MenuHelper menuHelper = new MenuHelper();
+            UserHelper userHelper = new UserHelper();
+
             menuHelper.PrintAppName();
-            Console.WriteLine($"\t\t{(addNew ? "Creat" : "Edit")} Hotel\n");
+            string title = $"\t\t{(addNew ? "Creat" : "Edit")} Hotel\n";
+            Console.WriteLine(title);
 
             var menuParams = new MenuHelper.MenuParams();
             (menuParams.left, menuParams.top) = Console.GetCursorPosition();
@@ -123,7 +130,7 @@ namespace HotelRoomReservationSystem.Helpers
                 Console.SetCursorPosition(menuParams.left, menuParams.top);
 
                 if (hotel.ManagerId != 0)
-                    user = UserHelper.GetUser(hotel.ManagerId);
+                    user = userHelper.GetUserById(hotel.ManagerId);
                 else
                     user = null;
 
@@ -153,7 +160,7 @@ namespace HotelRoomReservationSystem.Helpers
                         {
                             case 1:
                                 menuHelper.PrintAppName();
-                                Console.WriteLine($"\t\t{(addNew ? "Creat" : "Edit")} Hotel\n");
+                                Console.WriteLine(title);
                                 Console.Write("\tHotel name: ");
                                 hotel.Name = Console.ReadLine() ?? string.Empty;
                                 while (!Validator.NameValidate(hotel.Name, 0, hotels))
@@ -168,12 +175,12 @@ namespace HotelRoomReservationSystem.Helpers
                                 break;
                             case 2:
                                 menuHelper.PrintAppName();
-                                Console.WriteLine($"\t\t{(addNew ? "Creat" : "Edit")} Hotel\n"); 
+                                Console.WriteLine(title); 
                                 Console.Write("\tHotel address: ");
                                 hotel.Address = Console.ReadLine() ?? string.Empty;
                                 break;
                             case 3:
-                                user = UserHelper.SelectUser(Program.user, user);
+                                user = userHelper.SelectUser(Program.user, user);
                                 if (user != null)
                                     hotel.ManagerId = user.Id;
                                 break;
@@ -194,7 +201,7 @@ namespace HotelRoomReservationSystem.Helpers
                         }
                         Console.CursorVisible = false;
                         menuHelper.PrintAppName();
-                        Console.WriteLine($"\t\t{(addNew ? "Creat" : "Edit")} Hotel\n");
+                        Console.WriteLine(title);
                         (menuParams.left, menuParams.top) = Console.GetCursorPosition();
                         break;
                 }

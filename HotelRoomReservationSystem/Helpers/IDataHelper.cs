@@ -1,6 +1,4 @@
-﻿using HotelRoomReservationSystem.Models;
-
-namespace HotelRoomReservationSystem.Helpers
+﻿namespace HotelRoomReservationSystem.Helpers
 {
     public interface IDataHelper
     {

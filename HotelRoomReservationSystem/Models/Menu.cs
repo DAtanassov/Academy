@@ -1,5 +1,4 @@
-﻿using System.Diagnostics.Metrics;
-using HotelRoomReservationSystem.Helpers;
+﻿using HotelRoomReservationSystem.Helpers;
 using static HotelRoomReservationSystem.Helpers.MenuHelper;
 
 namespace HotelRoomReservationSystem.Models
@@ -21,6 +20,8 @@ namespace HotelRoomReservationSystem.Models
 
             if (adminNotRegistered)
             {
+                UserHelper userHelper = new UserHelper();
+
                 Console.CursorVisible = false;
                 menuHelper.PrintAppName();
                 Console.WriteLine("\n\t\tAdmin not found!\n\n");
@@ -49,7 +50,8 @@ namespace HotelRoomReservationSystem.Models
 
                         case ConsoleKey.Enter:
                             if (menuParams.choice == 1)
-                                Program.user = UserHelper.AddUser(true);
+                                if (userHelper.AddUser(true))
+                                    Program.user = userHelper.GetUserById(1);
                             else if (menuParams.choice == 2)
                             {
                                 Console.Clear();
@@ -484,7 +486,7 @@ namespace HotelRoomReservationSystem.Models
                         }
                         break;
                     case "2": // Edit profile
-                        if (Program.user != null && UserHelper.EditUser(Program.user, Program.user))
+                        if (Program.user != null && new UserHelper().EditUser(Program.user, Program.user))
                         {
                             menuHelper.PrintModelEditMenu(reservation);
                             Console.WriteLine("\tProfile edited successfully!");
@@ -532,6 +534,7 @@ namespace HotelRoomReservationSystem.Models
 
             Hotel? sHotel = null;
             ReservationHelper reservationHelper = new ReservationHelper();
+            UserHelper userHelper = new UserHelper();
             string option = "";
             bool running = true;
 
@@ -606,7 +609,7 @@ namespace HotelRoomReservationSystem.Models
                         }
                         break;
                     case "3": // Edit/Delete by user
-                        sUser = UserHelper.SelectUser(Program.user, sUser);
+                        sUser = userHelper.SelectUser(Program.user, sUser);
                         if (sUser != null)
                             sHotel = null;
                         break;
@@ -670,6 +673,7 @@ namespace HotelRoomReservationSystem.Models
         private void UsersManagmentMenu(Reservation? reservation)
         {
             User? sUser = null;
+            UserHelper userHelper = new UserHelper();
             string option = "";
             bool running = true;
 
@@ -715,17 +719,17 @@ namespace HotelRoomReservationSystem.Models
                         UserHelper.PrintUsers(Program.user);
                         break;
                     case "2": // Add user
-                        UserHelper.AddUser(false);
+                        userHelper.AddUser(false);
                         break;
                     case "3": // Edit user
                         if (Program.user != null && sUser == null)
                         {
                             menuHelper.PrintUserManagmentHeader(Program.user, sUser, reservation);
-                            sUser = UserHelper.SelectUser(Program.user, sUser);
+                            sUser = userHelper.SelectUser(Program.user, sUser);
                         }
                         if (Program.user != null && sUser != null)
                         {
-                            if (UserHelper.EditUser(Program.user, sUser))
+                            if (userHelper.EditUser(Program.user, sUser))
                             {
                                 menuHelper.PrintUserManagmentHeader(Program.user, sUser, reservation);
                                 Console.WriteLine("\tProfile edited successfully!");
@@ -742,10 +746,10 @@ namespace HotelRoomReservationSystem.Models
                         if (Program.user != null)
                         {
                             menuHelper.PrintUserManagmentHeader(Program.user, sUser, reservation);
-                            sUser = UserHelper.SelectUser(Program.user, sUser);
+                            sUser = userHelper.SelectUser(Program.user, sUser);
                             if (sUser != null)
                             {
-                                if (UserHelper.EditUser(Program.user, sUser))
+                                if (userHelper.EditUser(Program.user, sUser))
                                 {
                                     menuHelper.PrintUserManagmentHeader(Program.user, sUser, reservation);
                                     Console.WriteLine("\tProfile edited successfully!");

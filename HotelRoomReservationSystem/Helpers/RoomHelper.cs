@@ -1,5 +1,4 @@
 ﻿using HotelRoomReservationSystem.Models;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace HotelRoomReservationSystem.Helpers
 {
@@ -44,12 +43,16 @@ namespace HotelRoomReservationSystem.Helpers
 
             var menuParams = new MenuHelper.MenuParams();
             (menuParams.left, menuParams.top) = Console.GetCursorPosition();
-            menuParams.choice = 0;
 
             Func<string[], string[]> rName = (string[] n) => n;
             Dictionary<int, string[]> menu = rooms.Select((val, index) => new { Index = index, Value = val })
                                                     .ToDictionary(r => r.Index, r => rName([r.Value.ShortInfo(), r.Value.Id.ToString()]));
             menu.Add(menu.Count, ["Cancel", "0"]);
+            for (int i = menu.Count; i > 0; i--)
+            {
+                menu.Add(i, menu[i - 1]);
+                menu.Remove(i - 1);
+            }
 
             bool running = true;
             while (running)
@@ -63,15 +66,15 @@ namespace HotelRoomReservationSystem.Helpers
                 switch (menuParams.key.Key)
                 {
                     case ConsoleKey.UpArrow:
-                        menuParams.choice = menuParams.choice == 0 ? menu.Count - 1 : menuParams.choice - 1;
+                        menuParams.choice = menuParams.choice == 1 ? menu.Count : menuParams.choice - 1;
                         continue;
 
                     case ConsoleKey.DownArrow:
-                        menuParams.choice = menuParams.choice == menu.Count - 1 ? 0 : menuParams.choice + 1;
+                        menuParams.choice = menuParams.choice == menu.Count ? 1 : menuParams.choice + 1;
                         continue;
 
                     case ConsoleKey.Enter:
-                        if (menuParams.choice != menu.Count - 1)
+                        if (menuParams.choice != menu.Count)
                             room = GetRoomById(rooms, int.Parse(menu[menuParams.choice][1]));
                         running = false;
                         break;
@@ -193,24 +196,27 @@ namespace HotelRoomReservationSystem.Helpers
                                 }
                                 break;
                             case 2:
-                                roomType = roomTypeHelper.SelectRoomType(hotel);
-                                while (roomType == null)
+                                if (hotel != null)
                                 {
-                                    menuHelper.PrintAppName();
-                                    Console.WriteLine(title);
-                                    Console.WriteLine("\tRoom type cannot be empty!");
-                                    Console.WriteLine("\n\tPress \"Esc\" for cancel or any other key to continue...");
-                                    ConsoleKeyInfo userInput = Console.ReadKey();
-                                    if (userInput.Key == ConsoleKey.Escape)
-                                    {
-                                        cancel = true;
-                                        running = false;
-                                        break;
-                                    }
                                     roomType = roomTypeHelper.SelectRoomType(hotel);
+                                    while (roomType == null)
+                                    {
+                                        menuHelper.PrintAppName();
+                                        Console.WriteLine(title);
+                                        Console.WriteLine("\tRoom type cannot be empty!");
+                                        Console.WriteLine("\n\tPress \"Esc\" for cancel or any other key to continue...");
+                                        ConsoleKeyInfo userInput = Console.ReadKey();
+                                        if (userInput.Key == ConsoleKey.Escape)
+                                        {
+                                            cancel = true;
+                                            running = false;
+                                            break;
+                                        }
+                                        roomType = roomTypeHelper.SelectRoomType(hotel);
+                                    }
+                                    if (roomType != null)
+                                        room.RoomTypeId = roomType.Id;
                                 }
-                                if (roomType != null)
-                                    room.RoomTypeId = roomType.Id;
                                 break;
                             case 3:
                                 while (true)

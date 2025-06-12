@@ -1,23 +1,32 @@
 ﻿
 using System.Net.Mail;
-using System.Xml.Linq;
 using HotelRoomReservationSystem.Models;
 
 namespace HotelRoomReservationSystem.Helpers
 {
     internal class Validator
     {
-        public static bool EmailValidate(string email)
+        public static bool EmailValidate(string email, int id, List<User>? list = null)
         {
+            if (string.IsNullOrEmpty(email))
+                return false;
+
             try
             {
                 MailAddress m = new MailAddress(email);
-                return true;
             }
             catch (Exception)
             {
                 return false;
             }
+
+            if (list == null)
+                list = DataHelper.GetUserList();
+
+            if (list != null && list.Where(u => u.Email == email && u.Id != id).Count() > 0)
+                return false;
+
+            return true;
         }
 
         public static bool NameValidate(string name, int id, List<Hotel>? list = null)
@@ -29,6 +38,20 @@ namespace HotelRoomReservationSystem.Helpers
                 list = DataHelper.GetHotelList();
 
             if (list != null && list.Where(h => h.Name == name && h.Id != id).Count() > 0)
+                return false;
+
+            return true;
+        }
+        
+        public static bool NameValidate(string name, int id, List<User>? list = null)
+        {
+            if (string.IsNullOrEmpty(name))
+                return false;
+
+            if (list == null)
+                list = DataHelper.GetUserList();
+
+            if (list != null && list.Where(u => u.Name == name && u.Id != id).Count() > 0)
                 return false;
 
             return true;
@@ -62,9 +85,32 @@ namespace HotelRoomReservationSystem.Helpers
             return true;
         }
 
-        public static bool UsernameValidate(string username) { return true; }
-        
-        public static bool PasswordValidate(string password) { return true; }
+        public static bool UsernameValidate(string username, int id, List<User>? list = null)
+        {
+            if (string.IsNullOrEmpty(username))
+                return false;
+
+            if (list == null)
+                list = DataHelper.GetUserList();
+
+            if (list != null && list.Where(u => u.Username == username && u.Id != id).Count() > 0)
+                return false;
+
+            return true;
+        }
+
+        public static bool PasswordValidate(string password, int id, List<User>? list = null)
+        {
+            if (string.IsNullOrEmpty(password))
+                return false;
+
+            if (list == null)
+                list = DataHelper.GetUserList();
+
+            // TODO - check password strength
+
+            return true;
+        }
 
     }
 }

@@ -23,7 +23,7 @@ namespace HotelRoomReservationSystem.Models
             int allRooms = rooms.Count;
             int notAvalaible = reservations.Where(r => (r.Status == RoomStatus.booked || r.Status == RoomStatus.ocupated)
                                                         && (r.CheckInDate <= DateTime.Now.Date && DateTime.Now.Date <= r.CheckOutDate)).Count();
-            User? manager = UserHelper.GetUser(ManagerId);
+            User? manager = new UserHelper().GetUserById(ManagerId);
 
             return $"Hotel \"{Name}\" ({Address})" +
                 ((manager == null) ? "" : $", manager {manager.Name}, ") +

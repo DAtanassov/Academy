@@ -1,5 +1,4 @@
 ﻿using System.ComponentModel;
-using System.ComponentModel.DataAnnotations;
 
 namespace HotelRoomReservationSystem.Models
 {
@@ -17,6 +16,5 @@ namespace HotelRoomReservationSystem.Models
         expired = 4,
         [Description("Completed booking")]
         completed = 5
-
     }
 }
