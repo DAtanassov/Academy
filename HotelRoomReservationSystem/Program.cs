@@ -8,8 +8,6 @@ namespace HotelRoomReservationSystem
     {
         public static User? user;
 
-        private static readonly ReservationHelper reservationHelper = new ReservationHelper();
-
         static void Main(string[] args)
         {
             Console.Clear();
