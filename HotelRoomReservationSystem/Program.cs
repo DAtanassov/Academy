@@ -13,8 +13,6 @@ namespace HotelRoomReservationSystem
             Console.Clear();
             Console.OutputEncoding = Encoding.UTF8;
 
-            // Creating database files if not exist
-            DataHelper.CreateDataBase();
             ReservationHelper.CheckAndCancelExpiredReservations();
 
             (new Menu()).Run();

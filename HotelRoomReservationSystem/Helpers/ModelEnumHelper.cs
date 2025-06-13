@@ -3,7 +3,7 @@ using HotelRoomReservationSystem.Models;
 
 namespace HotelRoomReservationSystem.Helpers
 {
-    public class EnumHelper
+    public class ModelEnumHelper
     {
         public static RoomStatus SelectStatus(RoomStatus status)
         {

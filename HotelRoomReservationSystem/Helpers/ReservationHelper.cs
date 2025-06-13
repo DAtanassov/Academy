@@ -1,12 +1,15 @@
-﻿using HotelRoomReservationSystem.Models;
+﻿using HotelRoomReservationSystem.DB.JSON;
+using HotelRoomReservationSystem.Models;
 
 namespace HotelRoomReservationSystem.Helpers
 {
     public class ReservationHelper
     {
+        private readonly static DBService reservationDBService = new DBService(new ReservationDB());
+
         public List<Reservation> GetUserReservations(int[] userId, bool current = false, bool onlyActive = false)
         {
-            List<Reservation> reservations = DataHelper.GetReservationList();
+            List<Reservation> reservations = reservationDBService.GetList<Reservation>();
 
             RoomStatus[] statuses = { RoomStatus.booked, RoomStatus.ocupated };
 
@@ -24,7 +27,7 @@ namespace HotelRoomReservationSystem.Helpers
 
         public static List<Reservation> GetHotelReservations(int[] hotelId, bool current = false, bool onlyActive = false)
         {
-            List<Reservation> reservations = DataHelper.GetReservationList();
+            List<Reservation> reservations = reservationDBService.GetList<Reservation>();
 
             RoomStatus[] statuses = { RoomStatus.booked, RoomStatus.ocupated };
 
@@ -42,7 +45,7 @@ namespace HotelRoomReservationSystem.Helpers
 
         public List<Reservation> GetRoomReservations(int[] roomId)
         {
-            List<Reservation> reservations = DataHelper.GetReservationList();
+            List<Reservation> reservations = reservationDBService.GetList<Reservation>();
             return reservations.Where(r => roomId.Contains(r.RoomId)).ToList();
         }
 
@@ -55,7 +58,7 @@ namespace HotelRoomReservationSystem.Helpers
 
         public static void CheckAndCancelExpiredReservations()
         {
-            List<Reservation> reservations = DataHelper.GetReservationList();
+            List<Reservation> reservations = reservationDBService.GetList<Reservation>();
             if (reservations.Count == 0) return;
             
             DateTime toDate = DateTime.Today.Date.AddHours(12); // cancel reservation if not changet to "ocupated" befor 12h
@@ -65,15 +68,9 @@ namespace HotelRoomReservationSystem.Helpers
                 foreach (Reservation reservation in booked)
                 {
                     reservation.Status = RoomStatus.expired;
-                    int index = reservations.FindIndex(r => r.Id == reservation.Id);
-                    if (index == -1)
-                        reservations.Add(reservation);
-                    else
-                        reservations[index] = reservation;
+                    reservationDBService.Update(reservation);
                 }
             }
-
-            DataHelper.UpdateReservations(reservations);
         }
 
         public List<Room> SearchForAvailableRooms(Hotel? hotel = null, 
@@ -99,7 +96,7 @@ namespace HotelRoomReservationSystem.Helpers
 
             RoomStatus[] roomStatuses = { RoomStatus.booked, RoomStatus.ocupated };
 
-            List<Reservation> reservations = DataHelper.GetReservationList();
+            List<Reservation> reservations = reservationDBService.GetList<Reservation>();
             int[] roomsId = reservations.Where(r => (roomStatuses.Contains(r.Status) &&
                                                     ((r.CheckInDate <= checkInDate && checkInDate <= r.CheckOutDate)
                                                     || (r.CheckInDate <= checkOutDate && checkOutDate <= r.CheckOutDate)
@@ -114,10 +111,10 @@ namespace HotelRoomReservationSystem.Helpers
 
         public void BookTheRoom(Room room, User user, DateTime checkInDate, DateTime checkOutDate, string location)
         {
-            List<Reservation> reservations = DataHelper.GetReservationList();
+            List<Reservation> reservations = reservationDBService.GetList<Reservation>();
 
             Reservation reservation = new Reservation(user.Id, room, checkInDate, checkOutDate, RoomStatus.booked);
-            DataHelper.InsertReservations([reservation]);
+            reservationDBService.Insert(reservation);
 
             Console.WriteLine(reservation.Info());
 
@@ -274,7 +271,7 @@ namespace HotelRoomReservationSystem.Helpers
 
         public bool EditReservation(User? admin, User? user, Hotel? hotel, Reservation reservation)
         {
-            List<Reservation> reservations = DataHelper.GetReservationList();
+            List<Reservation> reservations = reservationDBService.GetList<Reservation>();
 
             int statusIndex;
             var roomStatusType = typeof(RoomStatus);
@@ -284,7 +281,7 @@ namespace HotelRoomReservationSystem.Helpers
 
             Console.CursorVisible = false;
             MenuHelper menuHelper = new MenuHelper();
-            EnumHelper enumHelper = new EnumHelper();
+            ModelEnumHelper enumHelper = new ModelEnumHelper();
             menuHelper.PrintReservationsManagmentHeader(user, hotel, reservation);
             Console.WriteLine($"\t\tEdit reservation\n");
 
@@ -327,7 +324,7 @@ namespace HotelRoomReservationSystem.Helpers
                         {
                             case 8:
                                 menuHelper.PrintReservationsManagmentHeader(user, hotel, reservation);
-                                reservation.Status = EnumHelper.SelectStatus(reservation.Status);
+                                reservation.Status = ModelEnumHelper.SelectStatus(reservation.Status);
                                 break;
 
                             case 9:
@@ -350,15 +347,7 @@ namespace HotelRoomReservationSystem.Helpers
             if (cancel)
                 return false;
             else
-            {
-                int index = reservations.FindIndex(r => r.Id == reservation.Id);
-                if (index == -1)
-                    reservations.Add(reservation);
-                else
-                    reservations[index] = reservation;
-
-                DataHelper.UpdateReservations(reservations);
-            }
+                reservationDBService.Update(reservation);
 
             return true;
 
@@ -366,7 +355,7 @@ namespace HotelRoomReservationSystem.Helpers
 
         public bool DeleteReservation(Reservation reservation)
         {
-            List<Reservation> reservations = DataHelper.GetReservationList();
+            List<Reservation> reservations = reservationDBService.GetList<Reservation>();
             int index = reservations.FindIndex(r => r.Id == reservation.Id && r.HotelId == reservation.HotelId);
 
             if (index == -1)
@@ -383,7 +372,7 @@ namespace HotelRoomReservationSystem.Helpers
             if ((Console.ReadLine() ?? "n").ToLower() != "y")
                 return false;
 
-            DataHelper.DeleteReservations([reservation]);
+            reservationDBService.Delete(reservation);
             return true;
         }
 

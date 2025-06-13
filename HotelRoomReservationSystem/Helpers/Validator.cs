@@ -1,11 +1,15 @@
-﻿
-using System.Net.Mail;
+﻿using System.Net.Mail;
+using HotelRoomReservationSystem.DB.JSON;
 using HotelRoomReservationSystem.Models;
 
 namespace HotelRoomReservationSystem.Helpers
 {
     internal class Validator
     {
+        protected readonly static DBService userDBService = new DBService(new UserDB());
+        protected readonly static DBService hotelDBService = new DBService(new HotelDB());
+        protected readonly static DBService roomTypeDBService = new DBService(new RoomTypeDB());
+
         public static bool EmailValidate(string email, int id, List<User>? list = null)
         {
             if (string.IsNullOrEmpty(email))
@@ -21,7 +25,7 @@ namespace HotelRoomReservationSystem.Helpers
             }
 
             if (list == null)
-                list = DataHelper.GetUserList();
+                list = userDBService.GetList<User>();
 
             if (list != null && list.Where(u => u.Email == email && u.Id != id).Count() > 0)
                 return false;
@@ -31,11 +35,12 @@ namespace HotelRoomReservationSystem.Helpers
 
         public static bool NameValidate(string name, int id, List<Hotel>? list = null)
         {
+
             if (string.IsNullOrEmpty(name))
                 return false;
 
             if (list == null)
-                list = DataHelper.GetHotelList();
+                list = hotelDBService.GetList<Hotel>();
 
             if (list != null && list.Where(h => h.Name == name && h.Id != id).Count() > 0)
                 return false;
@@ -45,11 +50,12 @@ namespace HotelRoomReservationSystem.Helpers
         
         public static bool NameValidate(string name, int id, List<User>? list = null)
         {
+
             if (string.IsNullOrEmpty(name))
                 return false;
 
             if (list == null)
-                list = DataHelper.GetUserList();
+                list = userDBService.GetList<User>();
 
             if (list != null && list.Where(u => u.Name == name && u.Id != id).Count() > 0)
                 return false;
@@ -58,12 +64,12 @@ namespace HotelRoomReservationSystem.Helpers
         }
 
         public static bool NameValidate(string name, int id, int hotelId, List<RoomType>? list = null)
-        {
+        { 
             if (string.IsNullOrEmpty(name))
                 return false;
 
             if (list == null)
-                list = DataHelper.GetRoomTypeList();
+                list = roomTypeDBService.GetList<RoomType>();
 
             if (list != null && list.Where(r => r.Name == name && r.Id != id && r.HotelId == hotelId).Count() > 0)
                 return false;
@@ -87,11 +93,12 @@ namespace HotelRoomReservationSystem.Helpers
 
         public static bool UsernameValidate(string username, int id, List<User>? list = null)
         {
+
             if (string.IsNullOrEmpty(username))
                 return false;
 
             if (list == null)
-                list = DataHelper.GetUserList();
+                list = userDBService.GetList<User>();
 
             if (list != null && list.Where(u => u.Username == username && u.Id != id).Count() > 0)
                 return false;
@@ -101,11 +108,12 @@ namespace HotelRoomReservationSystem.Helpers
 
         public static bool PasswordValidate(string password, int id, List<User>? list = null)
         {
+
             if (string.IsNullOrEmpty(password))
                 return false;
 
             if (list == null)
-                list = DataHelper.GetUserList();
+                list = userDBService.GetList<User>();
 
             // TODO - check password strength
 

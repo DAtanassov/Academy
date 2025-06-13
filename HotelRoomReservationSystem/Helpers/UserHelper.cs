@@ -1,11 +1,14 @@
-﻿using HotelRoomReservationSystem.Models;
+﻿using HotelRoomReservationSystem.DB.JSON;
+using HotelRoomReservationSystem.Models;
 
 namespace HotelRoomReservationSystem.Helpers
 {
     public class UserHelper
     {
+        private readonly static DBService userDBService = new DBService(new UserDB());
+
         public static List<User> GetUsers()
-            => DataHelper.GetUserList();
+            => userDBService.GetList<User>();
 
         public static List<User> GetUsers(int[] userId)
         {
@@ -19,7 +22,7 @@ namespace HotelRoomReservationSystem.Helpers
 
         public static bool isAdminRegistered()
         {
-            List<User> users = DataHelper.GetUserList();
+            List<User> users = GetUsers();
 
             if (users.Count > 0)
             {
@@ -338,16 +341,9 @@ namespace HotelRoomReservationSystem.Helpers
             else
             {
                 if (addNew)
-                    DataHelper.InsertUsers([user]);
+                    userDBService.Insert(user);
                 else
-                {
-                    int index = users.FindIndex(u => u.Id == user.Id);
-                    if (index == -1)
-                        users.Add(user);
-                    else
-                        users[index] = user;
-                    DataHelper.UpdateUsers(users);
-                }
+                    userDBService.Update(user);
             }
 
             return true;
@@ -360,13 +356,7 @@ namespace HotelRoomReservationSystem.Helpers
             if ((Console.ReadLine() ?? "n").ToLower() != "y")
                 return;
 
-            List<User> users = DataHelper.GetUserList();
-            int index = users.FindIndex(u => u.Id == user.Id);
-            if (index == -1)
-                return;
-
-            users.RemoveAt(index);
-            DataHelper.UpdateUsers(users);
+            userDBService.Delete(user);
 
         }
 
@@ -375,7 +365,7 @@ namespace HotelRoomReservationSystem.Helpers
             (new MenuHelper()).PrintAppName();
             Console.WriteLine("\t\tUsers\n");
 
-            List<User> users = DataHelper.GetUserList();
+            List<User> users = GetUsers();
             if (admin  != null)
                 users = users.Where(u => u.Id != ((User)admin).Id).ToList();
 
@@ -392,7 +382,7 @@ namespace HotelRoomReservationSystem.Helpers
             List<User> users = new List<User>();
 
             if (admin != null && admin.IsAdmin)
-                users = DataHelper.GetUserList();
+                users = GetUsers();
             else if (admin != null)
                 users.Add(admin);
 

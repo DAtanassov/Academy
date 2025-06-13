@@ -1,12 +1,15 @@
-﻿using HotelRoomReservationSystem.Models;
+﻿using HotelRoomReservationSystem.DB.JSON;
+using HotelRoomReservationSystem.Models;
 
 namespace HotelRoomReservationSystem.Helpers
 {
     public class RoomHelper
     {
+        private readonly static DBService roomDBService = new DBService(new RoomDB());
+
         public static List<Room> GetRooms(int[]? hotelId = null)
         {
-            List<Room>? rooms = DataHelper.GetRoomList();
+            List<Room>? rooms = roomDBService.GetList<Room>();
 
             if (rooms.Count > 0 && hotelId != null)
                 rooms = rooms.Where(x => hotelId.Contains(x.HotelId)).ToList();
@@ -320,16 +323,9 @@ namespace HotelRoomReservationSystem.Helpers
             else
             {
                 if (addNew)
-                    DataHelper.InsertHotelRooms([room]);
+                    roomDBService.Insert(room);
                 else
-                {
-                    int index = rooms.FindIndex(r => r.Id == room.Id);
-                    if (index == -1)
-                        rooms.Add(room);
-                    else
-                        rooms[index] = room;
-                    DataHelper.UpdateHotelRooms(rooms);
-                }
+                    roomDBService.Update(room);
             }
             return true;
         }
@@ -349,8 +345,7 @@ namespace HotelRoomReservationSystem.Helpers
             if ((Console.ReadLine() ?? "n").ToLower() != "y")
                 return false;
 
-            DataHelper.DeleteRoomData(room.Id);
-            DataHelper.DeleteRooms([room]);
+            roomDBService.Delete(room);
 
             return true;
         }

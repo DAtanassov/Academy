@@ -1,7 +1,7 @@
 ﻿
 namespace HotelRoomReservationSystem.Models
 {
-    public abstract class BaseModel : IComparable<BaseModel>
+    public abstract class BaseModel : IModel, IComparable<BaseModel>
     {
         public int Id { get; set; }
 
