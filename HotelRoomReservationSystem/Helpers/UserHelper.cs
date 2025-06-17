@@ -5,10 +5,10 @@ namespace HotelRoomReservationSystem.Helpers
 {
     public class UserHelper
     {
-        private readonly static DBService userDBService = new DBService(new UserDB());
+        private readonly static DBService<User> userDBService = new DBService<User>(new UserDB());
+        private readonly static Hasher hasher = new Hasher();
 
-        public static List<User> GetUsers()
-            => userDBService.GetList<User>();
+        public static List<User> GetUsers() => userDBService.GetList();
 
         public static List<User> GetUsers(int[] userId)
         {
@@ -37,11 +37,11 @@ namespace HotelRoomReservationSystem.Helpers
         {
             List<User> users = GetUsers();
 
-            users = users.Where(u => (u.Username == username && u.Password == password)).ToList();
+            users = users.Where(u => u.Username == username).ToList();
             if (users.Count == 0)
             {
                 Console.Clear();
-                Console.WriteLine("\n\tIncorrect username or password!");
+                Console.WriteLine("\n\tUser not found!");
                 Console.WriteLine("\tPress any key to continue...");
                 Console.ReadKey();
                 return null;
@@ -52,6 +52,15 @@ namespace HotelRoomReservationSystem.Helpers
             {
                 Console.Clear();
                 Console.WriteLine("\n\tUser is deactivated!");
+                Console.WriteLine("\tPress any key to continue...");
+                Console.ReadKey();
+                return null;
+            }
+
+            if (!hasher.Verify(password, user.Password))
+            {
+                Console.Clear();
+                Console.WriteLine("\n\tIncorrect username or password!");
                 Console.WriteLine("\tPress any key to continue...");
                 Console.ReadKey();
                 return null;
@@ -80,7 +89,9 @@ namespace HotelRoomReservationSystem.Helpers
             string user = Console.ReadLine() ?? "";
             Console.Clear();
             Console.Write("\n\tPassword: ");
+            Console.ForegroundColor = Console.BackgroundColor;
             string pass = Console.ReadLine() ?? "";
+            Console.ResetColor();
             
             return GetUser(user, pass);
 
@@ -195,22 +206,31 @@ namespace HotelRoomReservationSystem.Helpers
                                 }
                                 break;
                             case 3:
+                                
                                 menuHelper.PrintAppName();
                                 Console.WriteLine(title);
                                 Console.Write("\tPassword: ");
+                                Console.ForegroundColor = Console.BackgroundColor;
                                 user.Password = Console.ReadLine() ?? string.Empty;
+                                Console.ResetColor();
                                 while (!Validator.PasswordValidate(user.Password, user.Id, users))
                                 {
                                     if (string.IsNullOrEmpty(user.Password))
                                         Console.WriteLine("\tPassword cannot be empty!");
                                     else
-                                        Console.WriteLine("\tPassword is used!");
+                                        Console.WriteLine("\tThe password must be longer than 8 characters,\n" +
+                                            "\tcontain a lowercase and uppercase letter, a number, a special symbol,\n" +
+                                            "\thave no spaces, and be unused.\n");
                                     Console.Write("\tPassword: ");
+                                    Console.ForegroundColor = Console.BackgroundColor;
                                     user.Password = Console.ReadLine() ?? string.Empty;
+                                    Console.ResetColor();
                                 }
                                 Console.Write("\n\tEnter new password again: ");
+                                Console.ForegroundColor = Console.BackgroundColor;
                                 while (user.Password != (Console.ReadLine() ?? string.Empty))
                                 {
+                                    Console.ResetColor();
                                     menuHelper.PrintAppName();
                                     Console.WriteLine(title);
                                     Console.WriteLine("\tPasswords not matched");
@@ -227,6 +247,7 @@ namespace HotelRoomReservationSystem.Helpers
                                         menuHelper.PrintAppName();
                                         Console.WriteLine(title);
                                         Console.Write("\tEnter new password again: ");
+                                        Console.ForegroundColor = Console.BackgroundColor;
                                     }
                                 }
                                 break;
@@ -340,6 +361,10 @@ namespace HotelRoomReservationSystem.Helpers
                 return false;
             else
             {
+                User? oldUser = GetUserById(users, user.Id);
+                if (oldUser == null || (oldUser != null && oldUser.Password != user.Password))
+                    user.Password = hasher.Hash(user.Password);
+
                 if (addNew)
                     userDBService.Insert(user);
                 else
@@ -439,10 +464,6 @@ namespace HotelRoomReservationSystem.Helpers
 
             return user;
         }
-
-        
-
-        // TODO - Encrypt, Decript password
 
     }
 

@@ -1,4 +1,6 @@
 ﻿
+using HotelRoomReservationSystem.Models.Interfaces;
+
 namespace HotelRoomReservationSystem.Models
 {
     public abstract class BaseModel : IModel, IComparable<BaseModel>

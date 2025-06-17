@@ -5,11 +5,11 @@ namespace HotelRoomReservationSystem.Helpers
 {
     public class RoomHelper
     {
-        private readonly static DBService roomDBService = new DBService(new RoomDB());
+        private readonly static DBService<Room> roomDBService = new DBService<Room>(new RoomDB());
 
         public static List<Room> GetRooms(int[]? hotelId = null)
         {
-            List<Room>? rooms = roomDBService.GetList<Room>();
+            List<Room>? rooms = roomDBService.GetList();
 
             if (rooms.Count > 0 && hotelId != null)
                 rooms = rooms.Where(x => hotelId.Contains(x.HotelId)).ToList();

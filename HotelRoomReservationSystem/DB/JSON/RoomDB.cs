@@ -1,100 +1,72 @@
 ﻿
-using System.Text.Json;
+using HotelRoomReservationSystem.DB.Interfaces;
 using HotelRoomReservationSystem.Models;
 
 namespace HotelRoomReservationSystem.DB.JSON
 {
-    public class RoomDB : ReadWriteDB, IDatabase
+    public class RoomDB : ReadWriteDB<Room>, IDatabase<Room>
     {
-        protected readonly static string _databasePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Data") + Path.DirectorySeparatorChar;
         protected readonly static string _path = "Rooms.json";
 
-        public List<T> GetList<T>()
+        public List<Room> GetList() => base.GetAllItemsFromFile(_path);
+
+        public Room GetById(int id)
         {
-            string fileContent = GetFileContent(_databasePath, _path);
-
-            List<T>? list = new List<T>();
-
-            if (!String.IsNullOrEmpty(fileContent))
-                list = JsonSerializer.Deserialize<List<T>>(fileContent);
-
-            if (list == null)
-                return new List<T>();
-
-            return list;
-        }
-        public T GetById<T>(int id)
-        {
-            List<T> list = GetList<T>();
-            return list.FirstOrDefault(x => (x as Room).Id == id) ?? throw new KeyNotFoundException($"Room type with ID {id} not found.");
+            List<Room> list = GetList();
+            return list.FirstOrDefault(x => x.Id == id) ?? throw new KeyNotFoundException($"Room type with ID {id} not found.");
 
         }
-        public void Insert<T>(T item)
+        public void Insert(Room item)
         {
-            List<T> list = GetList<T>();
+            List<Room> list = GetList();
 
-            (item as Room).Id = GetMaxId<T>(list);
+            item.Id = list.Any() ? list.Max(i => i.Id) + 1 : 1;
             list.Add(item);
 
-            WriteToFile<T>(list);
+            WriteToFile(list, _path);
 
         }
-        public void Update<T>(T item)
+        public void Update(Room item)
         {
-            List<T> list = GetList<T>();
+            List<Room> list = GetList();
 
-            int index = list.FindIndex(x => (x as Room).Id == (item as Room).Id);
+            int index = list.FindIndex(x => x.Id == item.Id);
             if (index == -1)
                 return;
 
             list[index] = item;
 
-            WriteToFile(list);
+            WriteToFile(list, _path);
 
         }
-        public void Delete<T>(T item)
+        public void Delete(Room item)
         {
-            int roomId = (item as Room).Id;
+            List<Room> list = GetList();
 
-            List<T> list = GetList<T>();
-
-            int index = list.FindIndex(x => (x as Room).Id == roomId);
+            int index = list.FindIndex(x => x.Id == item.Id);
             if (index == -1)
                 return;
 
-            new ReservationDB().DeleteByRoomId(roomId);
+            new ReservationDB().DeleteByRoomId(item.Id);
 
             list.RemoveAt(index);
 
-            WriteToFile(list);
+            WriteToFile(list, _path);
         }
 
         public void DeleteByHotelId(int hotelId)
         {
-            List<Room> list = GetList<Room>();
+            List<Room> list = GetList();
             list.RemoveAll(x => x.HotelId == hotelId);
-            WriteToFile(list);
+            WriteToFile(list, _path);
         }
         public void DeleteByRoomTypeId(int roomTypeId)
         {
-            List<Room> list = GetList<Room>();
+            List<Room> list = GetList();
             list.RemoveAll(x => x.RoomTypeId == roomTypeId);
-            WriteToFile(list);
+            WriteToFile(list, _path);
         }
 
-        private void WriteToFile<T>(List<T> list)
-            => WriteToFile(JsonSerializer.Serialize(list, new JsonSerializerOptions { WriteIndented = true }), _databasePath, _path);
-
-        private int GetMaxId<T>(List<T> list)
-        {
-            if (list.Count == 0)
-                return 1;
-
-            int maxId = list.Max(x => (x as Room).Id);
-            return ++maxId;
-        }
-
-        public override string GetFileContent(string databasePath, string path) => base.GetFileContent(databasePath, path);
-        public override void WriteToFile(string content, string databasePath, string path) => base.WriteToFile(content, databasePath, path);
+        public override void WriteToFile(List<Room> items, string path) => base.WriteToFile(items, path);
     }
 }

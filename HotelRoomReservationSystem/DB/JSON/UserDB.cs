@@ -1,83 +1,55 @@
-﻿using System.Text.Json;
+﻿using HotelRoomReservationSystem.DB.Interfaces;
 using HotelRoomReservationSystem.Models;
 
 namespace HotelRoomReservationSystem.DB.JSON
 {
-    public class UserDB : ReadWriteDB, IDatabase
+    public class UserDB : ReadWriteDB<User>, IDatabase<User>
     {
-        protected readonly static string _databasePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Data") + Path.DirectorySeparatorChar;
         protected readonly static string _path = "Users.json";
 
-        public List<T> GetList<T>()
+        public List<User> GetList() => base.GetAllItemsFromFile(_path);
+        public User GetById(int id)
         {
-            string fileContent = GetFileContent(_databasePath, _path);
-
-            List<T>? list = new List<T>();
-
-            if (!String.IsNullOrEmpty(fileContent))
-                list = JsonSerializer.Deserialize<List<T>>(fileContent);
-
-            if (list == null)
-                return new List<T>();
-
-            return list;
-        }
-        public T GetById<T>(int id)
-        {
-            List<T> list = GetList<T>();
-            return list.FirstOrDefault(x => (x as User).Id == id) ?? throw new KeyNotFoundException($"User with ID {id} not found.");
+            List<User> list = GetList();
+            return list.FirstOrDefault(x => x.Id == id) ?? throw new KeyNotFoundException($"User with ID {id} not found.");
 
         }
-        public void Insert<T>(T item)
+        public void Insert(User item)
         {
-            List<T> list = GetList<T>();
+            List<User> list = GetList();
 
-            (item as User).Id = GetMaxId<T>(list);
+            item.Id = list.Any() ? list.Max(x => x.Id) + 1 : 1;
             list.Add(item);
 
-            WriteToFile<T>(list);
+            WriteToFile(list, _path);
 
         }
-        public void Update<T>(T item)
+        public void Update(User item)
         {
-            List<T> list = GetList<T>();
+            List<User> list = GetList();
 
-            int index = list.FindIndex(x => (x as User).Id == (item as User).Id);
+            int index = list.FindIndex(x => x.Id == item.Id);
             if (index == -1)
                 return;
 
             list[index] = item;
 
-            WriteToFile(list);
+            WriteToFile(list, _path);
 
         }
-        public void Delete<T>(T item)
+        public void Delete(User item)
         {
+            List<User> list = GetList();
 
-            List<T> list = GetList<T>();
-
-            int index = list.FindIndex(x => (x as User).Id == (item as User).Id);
+            int index = list.FindIndex(x => x.Id == item.Id);
             if (index == -1)
                 return;
 
             list.RemoveAt(index);
 
-            WriteToFile(list);
+            WriteToFile(list, _path);
         }
 
-        private void WriteToFile<T>(List<T> list)
-            => WriteToFile(JsonSerializer.Serialize(list, new JsonSerializerOptions { WriteIndented = true }), _databasePath, _path);
-
-        private int GetMaxId<T>(List<T> list)
-        {
-            if (list.Count == 0)
-                return 1;
-
-            int maxId = list.Max(x => (x as User).Id);
-            return ++maxId;
-        }
-
-        public override string GetFileContent(string databasePath, string path) => base.GetFileContent(databasePath, path);
-        public override void WriteToFile(string content, string databasePath, string path) => base.WriteToFile(content, databasePath, path);
+        public override void WriteToFile(List<User> items, string path) => base.WriteToFile(items, path);
     }
 }

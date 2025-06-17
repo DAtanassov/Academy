@@ -5,10 +5,10 @@ namespace HotelRoomReservationSystem.Helpers
 {
     public class HotelHelper
     {   
-        private readonly static DBService hotelDBService = new DBService(new HotelDB());
+        private readonly static DBService<Hotel> hotelDBService = new DBService<Hotel>(new HotelDB());
 
         public static List<Hotel> GetHotels()
-            => hotelDBService.GetList<Hotel>();
+            => hotelDBService.GetList();
 
         public static List<Hotel> GetHotels(int[] hotelId)
         {

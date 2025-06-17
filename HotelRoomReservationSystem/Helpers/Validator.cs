@@ -1,4 +1,5 @@
 ﻿using System.Net.Mail;
+using System.Text.RegularExpressions;
 using HotelRoomReservationSystem.DB.JSON;
 using HotelRoomReservationSystem.Models;
 
@@ -6,9 +7,10 @@ namespace HotelRoomReservationSystem.Helpers
 {
     internal class Validator
     {
-        protected readonly static DBService userDBService = new DBService(new UserDB());
-        protected readonly static DBService hotelDBService = new DBService(new HotelDB());
-        protected readonly static DBService roomTypeDBService = new DBService(new RoomTypeDB());
+        protected readonly static DBService<User> userDBService = new DBService<User>(new UserDB());
+        protected readonly static DBService<Hotel> hotelDBService = new DBService<Hotel>(new HotelDB());
+        protected readonly static DBService<RoomType> roomTypeDBService = new DBService<RoomType>(new RoomTypeDB());
+        protected readonly static Hasher hasher = new Hasher();
 
         public static bool EmailValidate(string email, int id, List<User>? list = null)
         {
@@ -25,7 +27,7 @@ namespace HotelRoomReservationSystem.Helpers
             }
 
             if (list == null)
-                list = userDBService.GetList<User>();
+                list = userDBService.GetList();
 
             if (list != null && list.Where(u => u.Email == email && u.Id != id).Count() > 0)
                 return false;
@@ -40,7 +42,7 @@ namespace HotelRoomReservationSystem.Helpers
                 return false;
 
             if (list == null)
-                list = hotelDBService.GetList<Hotel>();
+                list = hotelDBService.GetList();
 
             if (list != null && list.Where(h => h.Name == name && h.Id != id).Count() > 0)
                 return false;
@@ -55,7 +57,7 @@ namespace HotelRoomReservationSystem.Helpers
                 return false;
 
             if (list == null)
-                list = userDBService.GetList<User>();
+                list = userDBService.GetList();
 
             if (list != null && list.Where(u => u.Name == name && u.Id != id).Count() > 0)
                 return false;
@@ -69,7 +71,7 @@ namespace HotelRoomReservationSystem.Helpers
                 return false;
 
             if (list == null)
-                list = roomTypeDBService.GetList<RoomType>();
+                list = roomTypeDBService.GetList();
 
             if (list != null && list.Where(r => r.Name == name && r.Id != id && r.HotelId == hotelId).Count() > 0)
                 return false;
@@ -98,7 +100,7 @@ namespace HotelRoomReservationSystem.Helpers
                 return false;
 
             if (list == null)
-                list = userDBService.GetList<User>();
+                list = userDBService.GetList();
 
             if (list != null && list.Where(u => u.Username == username && u.Id != id).Count() > 0)
                 return false;
@@ -113,11 +115,16 @@ namespace HotelRoomReservationSystem.Helpers
                 return false;
 
             if (list == null)
-                list = userDBService.GetList<User>();
+                list = userDBService.GetList();
 
-            // TODO - check password strength
+            User user = userDBService.GetById(id);
+            if (user != null && hasher.Verify(password, user.Password)) // same password
+                return false;
 
-            return true;
+            //Regex validateRegex = new Regex("^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[%!@#$%^&*()?/>.<,:;'\\|}]{[_~`+=-\"]).{8,}$");
+            Regex validateRegex = new Regex("^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[#?!@$%^&*()/><,:;'\\|{}_~`+=-]).{8,}$");
+            return validateRegex.IsMatch(password);
+            //return false;
         }
 
     }

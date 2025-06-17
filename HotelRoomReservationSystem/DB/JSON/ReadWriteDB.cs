@@ -1,16 +1,20 @@
 ﻿
+using System.Text.Json;
+
 namespace HotelRoomReservationSystem.DB.JSON
 {
-    public class ReadWriteDB
+    public class ReadWriteDB<T>
     {
-        private void CreateDataBase(string databasePath, string path)
-        {
-            string dbPath = databasePath + path;
+        protected readonly string _dbPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Data") + Path.DirectorySeparatorChar;
 
-            if (!Directory.Exists(databasePath))
+        private void CreateDataBase(string path)
+        {
+            string dbPath = _dbPath + path;
+
+            if (!Directory.Exists(_dbPath))
             {
                 try
-                { Directory.CreateDirectory(databasePath); }
+                { Directory.CreateDirectory(_dbPath); }
                 catch (Exception)
                 { throw new ApplicationException("Can't create directory database."); }
             }
@@ -28,33 +32,53 @@ namespace HotelRoomReservationSystem.DB.JSON
 
         }
 
-        public virtual string GetFileContent(string databasePath, string path)
+        private string GetFileContent(string path)
         {
-            string dbPath = databasePath + path;
+            string dbPath = _dbPath + path;
 
-            CreateDataBase(databasePath, path);
+            CreateDataBase(path);
 
             string fileContent = "";
             try
             {
                 fileContent = File.ReadAllText(dbPath);
             }
-            catch (Exception)
-            { throw new ApplicationException("Can't read database"); }
+            catch (Exception e)
+            { throw new ApplicationException($"Can't read database.\n{e.Message}"); }
 
             return fileContent;
         }
 
-        public virtual void WriteToFile(string content, string databasePath, string path)
+        public List<T> GetAllItemsFromFile(string path)
         {
-            string dbPath = databasePath + path;
+            string fileContent = GetFileContent(path);
+            List<T>? items = new List<T>();
 
-            CreateDataBase(databasePath, path);
+            if (!string.IsNullOrEmpty(fileContent))
+                try
+                { items = JsonSerializer.Deserialize<List<T>>(fileContent); }
+                catch (Exception e)
+                { throw new ApplicationException($"Can't read database.\n{e.Message}"); }
+
+
+            if (items == null)
+                return new List<T>();
+
+            return items;
+        }
+
+        public virtual void WriteToFile(List<T> items, string path)
+        {
+            string fileContent = JsonSerializer.Serialize(items, new JsonSerializerOptions { WriteIndented = true });
+
+            string dbPath = _dbPath + path;
+
+            CreateDataBase(path);
 
             try
-            { File.WriteAllText(dbPath, content); }
-            catch (Exception)
-            { throw new ApplicationException("Can't write to database"); }
+            { File.WriteAllText(dbPath, fileContent); }
+            catch (Exception e)
+            { throw new ApplicationException($"Can't write to database.\n{e.Message}"); }
         }
     }
 }

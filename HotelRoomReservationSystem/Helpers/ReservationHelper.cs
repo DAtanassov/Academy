@@ -5,11 +5,11 @@ namespace HotelRoomReservationSystem.Helpers
 {
     public class ReservationHelper
     {
-        private readonly static DBService reservationDBService = new DBService(new ReservationDB());
+        private readonly static DBService<Reservation> reservationDBService = new DBService<Reservation>(new ReservationDB());
 
         public List<Reservation> GetUserReservations(int[] userId, bool current = false, bool onlyActive = false)
         {
-            List<Reservation> reservations = reservationDBService.GetList<Reservation>();
+            List<Reservation> reservations = reservationDBService.GetList();
 
             RoomStatus[] statuses = { RoomStatus.booked, RoomStatus.ocupated };
 
@@ -27,7 +27,7 @@ namespace HotelRoomReservationSystem.Helpers
 
         public static List<Reservation> GetHotelReservations(int[] hotelId, bool current = false, bool onlyActive = false)
         {
-            List<Reservation> reservations = reservationDBService.GetList<Reservation>();
+            List<Reservation> reservations = reservationDBService.GetList();
 
             RoomStatus[] statuses = { RoomStatus.booked, RoomStatus.ocupated };
 
@@ -45,7 +45,7 @@ namespace HotelRoomReservationSystem.Helpers
 
         public List<Reservation> GetRoomReservations(int[] roomId)
         {
-            List<Reservation> reservations = reservationDBService.GetList<Reservation>();
+            List<Reservation> reservations = reservationDBService.GetList();
             return reservations.Where(r => roomId.Contains(r.RoomId)).ToList();
         }
 
@@ -58,7 +58,7 @@ namespace HotelRoomReservationSystem.Helpers
 
         public static void CheckAndCancelExpiredReservations()
         {
-            List<Reservation> reservations = reservationDBService.GetList<Reservation>();
+            List<Reservation> reservations = reservationDBService.GetList();
             if (reservations.Count == 0) return;
             
             DateTime toDate = DateTime.Today.Date.AddHours(12); // cancel reservation if not changet to "ocupated" befor 12h
@@ -96,7 +96,7 @@ namespace HotelRoomReservationSystem.Helpers
 
             RoomStatus[] roomStatuses = { RoomStatus.booked, RoomStatus.ocupated };
 
-            List<Reservation> reservations = reservationDBService.GetList<Reservation>();
+            List<Reservation> reservations = reservationDBService.GetList();
             int[] roomsId = reservations.Where(r => (roomStatuses.Contains(r.Status) &&
                                                     ((r.CheckInDate <= checkInDate && checkInDate <= r.CheckOutDate)
                                                     || (r.CheckInDate <= checkOutDate && checkOutDate <= r.CheckOutDate)
@@ -111,7 +111,7 @@ namespace HotelRoomReservationSystem.Helpers
 
         public void BookTheRoom(Room room, User user, DateTime checkInDate, DateTime checkOutDate, string location)
         {
-            List<Reservation> reservations = reservationDBService.GetList<Reservation>();
+            List<Reservation> reservations = reservationDBService.GetList();
 
             Reservation reservation = new Reservation(user.Id, room, checkInDate, checkOutDate, RoomStatus.booked);
             reservationDBService.Insert(reservation);
@@ -271,7 +271,7 @@ namespace HotelRoomReservationSystem.Helpers
 
         public bool EditReservation(User? admin, User? user, Hotel? hotel, Reservation reservation)
         {
-            List<Reservation> reservations = reservationDBService.GetList<Reservation>();
+            List<Reservation> reservations = reservationDBService.GetList();
 
             int statusIndex;
             var roomStatusType = typeof(RoomStatus);
@@ -355,7 +355,7 @@ namespace HotelRoomReservationSystem.Helpers
 
         public bool DeleteReservation(Reservation reservation)
         {
-            List<Reservation> reservations = reservationDBService.GetList<Reservation>();
+            List<Reservation> reservations = reservationDBService.GetList();
             int index = reservations.FindIndex(r => r.Id == reservation.Id && r.HotelId == reservation.HotelId);
 
             if (index == -1)

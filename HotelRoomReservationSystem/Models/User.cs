@@ -30,11 +30,11 @@
                    $"\tName: {Name}\n" +
                    $"\temail: {Email}\n" +
                    $"\tUsername: {Username}\n" +
-                   $"\tPassword: {Password}\n" +
+                   $"\tPassword: ****\n" +
                    $"\tPhone: {Phone}\n" +
                    $"\tAddress: {Address}\n" +
-                   $"\tAdministrator: {((IsAdmin) ? "yes" : "no")}\n" +
-                   $"\tDeactivated: {((Deactivated) ? "yes" : "no" )}";
+                   $"\tAdministrator: {(IsAdmin ? "yes" : "no")}\n" +
+                   $"\tDeactivated: {(Deactivated ? "yes" : "no" )}";
         }
 
         public override string ShortInfo()

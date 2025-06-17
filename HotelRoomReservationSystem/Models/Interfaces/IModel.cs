@@ -1,4 +1,4 @@
-﻿namespace HotelRoomReservationSystem.Models
+﻿namespace HotelRoomReservationSystem.Models.Interfaces
 {
     public interface IModel
     {
