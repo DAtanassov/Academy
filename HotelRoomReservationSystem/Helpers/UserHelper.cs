@@ -374,15 +374,16 @@ namespace HotelRoomReservationSystem.Helpers
             return true;
         }
 
-        public static void DeleteUser(User user)
+        public bool DeleteUser(User user)
         {
             Console.Clear();
             Console.Write($"\tDelete user \"{user.Name}\" and all data for the user? (\"Y/n\"): ");
             if ((Console.ReadLine() ?? "n").ToLower() != "y")
-                return;
+                return false;
 
             userDBService.Delete(user);
 
+            return true;
         }
 
         public static void PrintUsers(User? admin = null)

@@ -7,6 +7,7 @@ namespace HotelRoomReservationSystem.Models
     {
         private static readonly MenuHelper menuHelper = new MenuHelper();
         private static readonly HotelHelper hotelHelper = new HotelHelper();
+        private static readonly UserHelper userHelper = new UserHelper();
 
         public void Run()
         {
@@ -501,13 +502,15 @@ namespace HotelRoomReservationSystem.Models
                             menuHelper.PrintModelEditMenu(reservation);
                             
                             string name = Program.user.Name;
-                            UserHelper.DeleteUser(Program.user);
-                            running = false;
-                            Program.user = null;
-                            reservation = null;
-                            Console.WriteLine($"\tUser \"{name}\" delete successfully.");
-                            Console.WriteLine("\n\tPress any key to continue...");
-                            Console.ReadKey();
+                            if (userHelper.DeleteUser(Program.user))
+                            {
+                                running = false;
+                                Program.user = null;
+                                reservation = null;
+                                Console.WriteLine($"\tUser \"{name}\" delete successfully.");
+                                Console.WriteLine("\n\tPress any key to continue...");
+                                Console.ReadKey();
+                            }
                         }
                         break;
                     case "4": // Reservations menu
@@ -765,12 +768,14 @@ namespace HotelRoomReservationSystem.Models
                         {
                             menuHelper.PrintUserManagmentHeader(Program.user, sUser, reservation);
                             string name = sUser.Name;
-                            UserHelper.DeleteUser(sUser);
-                            sUser = null;
-                            reservation = null;
-                            Console.WriteLine($"\tUser \"{name}\" delete successfully.");
-                            Console.WriteLine("\n\tPress any key to continue...");
-                            Console.ReadKey();
+                            if (userHelper.DeleteUser(sUser))
+                            {
+                                sUser = null;
+                                reservation = null;
+                                Console.WriteLine($"\tUser \"{name}\" delete successfully.");
+                                Console.WriteLine("\n\tPress any key to continue...");
+                                Console.ReadKey();
+                            }
                         }
                         break;
                     case "7": // Reservations menu
